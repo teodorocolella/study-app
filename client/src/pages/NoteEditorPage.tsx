@@ -1,0 +1,216 @@
+import { ArrowLeft, Check, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { api, ApiError } from "../api/client";
+import type { Deck, Note } from "../api/types";
+import { AppShell } from "../components/layout/AppShell";
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+export function NoteEditorPage() {
+  const { classId, noteId } = useParams<{ classId: string; noteId: string }>();
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [selectedDeckId, setSelectedDeckId] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!noteId) return;
+    api
+      .get<Note>(`/notes/${noteId}`)
+      .then((note) => {
+        setTitle(note.title);
+        setContent(note.contentMarkdown);
+        setAiSummary(note.aiSummary);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load note"));
+  }, [noteId]);
+
+  useEffect(() => {
+    if (!classId) return;
+    api
+      .get<Deck[]>(`/classes/${classId}/decks`)
+      .then((list) => {
+        setDecks(list);
+        if (list.length > 0) setSelectedDeckId(list[0].id);
+      })
+      .catch(() => {});
+  }, [classId]);
+
+  function scheduleSave(nextTitle: string, nextContent: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setStatus("saving");
+    debounceRef.current = setTimeout(async () => {
+      try {
+        await api.patch(`/notes/${noteId}`, { title: nextTitle, contentMarkdown: nextContent });
+        setStatus("saved");
+      } catch {
+        setStatus("error");
+      }
+    }, 700);
+  }
+
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    scheduleSave(value, content);
+  }
+
+  function handleContentChange(value: string) {
+    setContent(value);
+    scheduleSave(title, value);
+  }
+
+  async function handleDelete() {
+    if (!noteId || !confirm("Delete this note?")) return;
+    await api.delete(`/notes/${noteId}`);
+    navigate(`/classes/${classId}`);
+  }
+
+  async function handleSummarize() {
+    setSummarizing(true);
+    setAiMessage(null);
+    try {
+      const updated = await api.post<Note>("/ai/summarize-note", { noteId });
+      setAiSummary(updated.aiSummary);
+    } catch (err) {
+      setAiMessage(err instanceof ApiError ? err.message : "Failed to summarize note");
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
+  async function handleGenerateFlashcards() {
+    if (!selectedDeckId) {
+      setAiMessage("Create a flashcard deck in this class first.");
+      return;
+    }
+    setGenerating(true);
+    setAiMessage(null);
+    try {
+      const created = await api.post<unknown[]>("/ai/generate-flashcards", {
+        noteId,
+        deckId: selectedDeckId,
+      });
+      setAiMessage(`Added ${created.length} flashcards to the deck.`);
+    } catch (err) {
+      setAiMessage(err instanceof ApiError ? err.message : "Failed to generate flashcards");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <AppShell>
+      <Link
+        to={`/classes/${classId}`}
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to class
+      </Link>
+
+      <div className="mt-2 mb-4 flex items-center justify-between gap-4">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          className="font-display w-full text-2xl font-semibold text-slate-800 focus:outline-none"
+        />
+        <div className="flex items-center gap-3 whitespace-nowrap">
+          <SaveIndicator status={status} />
+          <button
+            onClick={() => void handleDelete()}
+            className="flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        </div>
+      </div>
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <button
+          onClick={() => void handleSummarize()}
+          disabled={summarizing}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+        >
+          {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-violet-500" />}
+          {summarizing ? "Summarizing…" : "Summarize"}
+        </button>
+
+        <select
+          value={selectedDeckId}
+          onChange={(e) => setSelectedDeckId(e.target.value)}
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+        >
+          {decks.length === 0 && <option value="">No decks yet</option>}
+          {decks.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => void handleGenerateFlashcards()}
+          disabled={generating || !selectedDeckId}
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.02] disabled:opacity-50"
+        >
+          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+          {generating ? "Generating…" : "Generate flashcards from this note"}
+        </button>
+
+        {aiMessage && <span className="text-sm text-slate-500">{aiMessage}</span>}
+      </div>
+
+      {aiSummary && (
+        <div className="animate-flip-in mb-4 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 prose prose-sm max-w-none">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-500">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI summary
+          </p>
+          <ReactMarkdown>{aiSummary}</ReactMarkdown>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <textarea
+          value={content}
+          onChange={(e) => handleContentChange(e.target.value)}
+          placeholder="Write your notes in markdown…"
+          className="h-[60vh] resize-none rounded-xl border border-slate-300 p-4 font-mono text-sm shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+        />
+        <div className="h-[60vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm prose prose-sm max-w-none">
+          <ReactMarkdown>{content || "*Preview will appear here*"}</ReactMarkdown>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  const config = {
+    idle: null,
+    saving: { icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />, text: "Saving…", color: "text-slate-400" },
+    saved: { icon: <Check className="h-3.5 w-3.5" />, text: "Saved", color: "text-emerald-500" },
+    error: { icon: null, text: "Failed to save", color: "text-red-500" },
+  }[status];
+  if (!config) return null;
+  return (
+    <span className={`flex items-center gap-1 text-xs ${config.color}`}>
+      {config.icon}
+      {config.text}
+    </span>
+  );
+}

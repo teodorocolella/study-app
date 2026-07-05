@@ -1,0 +1,114 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  displayName   String
+  createdAt     DateTime       @default(now())
+
+  classFolders  ClassFolder[]
+  refreshTokens RefreshToken[]
+  cardProgress  CardProgress[]
+  reviewLogs    ReviewLog[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ClassFolder {
+  id        String   @id @default(cuid())
+  name      String
+  colorTag  String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  notes     Note[]
+  decks     Deck[]
+
+  @@index([userId])
+}
+
+model Note {
+  id              String      @id @default(cuid())
+  title           String
+  contentMarkdown String      @db.Text
+  aiSummary       String?     @db.Text
+  classFolderId   String
+  classFolder     ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([classFolderId])
+}
+
+model Deck {
+  id            String      @id @default(cuid())
+  name          String
+  classFolderId String
+  classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  cards         Flashcard[]
+
+  @@index([classFolderId])
+}
+
+model Flashcard {
+  id        String         @id @default(cuid())
+  front     String         @db.Text
+  back      String         @db.Text
+  deckId    String
+  deck      Deck           @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  progress  CardProgress[]
+
+  @@index([deckId])
+}
+
+// Per-user-per-card SM-2 scheduling state.
+model CardProgress {
+  id             String    @id @default(cuid())
+  cardId         String
+  card           Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  easeFactor     Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  dueDate        DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  @@unique([cardId, userId])
+  @@index([userId, dueDate])
+}
+
+// Audit trail of every review — powers streak calculation and "studied today" stats.
+model ReviewLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId     String
+  grade      Int
+  reviewedAt DateTime @default(now())
+
+  @@index([userId, reviewedAt])
+}
