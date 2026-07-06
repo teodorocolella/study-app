@@ -88,6 +88,7 @@ Visit `http://localhost:5173` and sign up for an account.
 | `NODE_ENV`            | `development` or `production`.                                           |
 | `PORT`                | Port the Express server listens on (defaults to `3001` locally).         |
 | `CLIENT_ORIGIN`       | Only needed if client/server are ever split across origins (CORS).       |
+| `VITE_GA_MEASUREMENT_ID` | Optional. Google Analytics 4 Measurement ID (`G-XXXXXXXXXX`). Leave unset to disable analytics. Vite bakes this into the build at build time, so it must be set on Render's Web Service *before* the build runs — not just at runtime. |
 
 ## Deployment (Render)
 

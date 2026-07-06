@@ -1,6 +1,8 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
+import { initAnalytics, trackPageView } from "./lib/analytics";
 import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
@@ -13,9 +15,24 @@ function protect(element: React.ReactNode) {
   return <RequireAuth>{element}</RequireAuth>;
 }
 
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
+      <AnalyticsTracker />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
