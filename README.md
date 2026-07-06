@@ -1,4 +1,4 @@
-# Study App
+# Study Hub
 
 A study companion web app with class folders, spaced-repetition flashcards, markdown notes, and
 an AI tutor powered by the Claude API — built for middle school through high school and beyond.

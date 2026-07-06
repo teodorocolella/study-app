@@ -1,11 +1,11 @@
-import { ArrowLeft, FileText, Layers, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, FileText, Layers, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, Deck, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { TutorChatPanel } from "../components/ai/TutorChatPanel";
-import { getClassColor } from "../lib/classColors";
+import { CLASS_COLORS, getClassColor } from "../lib/classColors";
 
 export function ClassFolderPage() {
   const { classId } = useParams<{ classId: string }>();
@@ -16,6 +16,10 @@ export function ClassFolderPage() {
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newDeckName, setNewDeckName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     if (!classId) return;
@@ -67,6 +71,31 @@ export function ClassFolderPage() {
     navigate("/");
   }
 
+  function startEdit() {
+    if (!classFolder) return;
+    setEditName(classFolder.name);
+    setEditColor(classFolder.colorTag ?? CLASS_COLORS[0].id);
+    setIsEditing(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!classId || !editName.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await api.patch<ClassFolder>(`/classes/${classId}`, {
+        name: editName.trim(),
+        colorTag: editColor,
+      });
+      setClassFolder(updated);
+      setIsEditing(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to update class");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const color = getClassColor(classFolder?.colorTag);
 
   return (
@@ -79,16 +108,68 @@ export function ClassFolderPage() {
         Dashboard
       </Link>
 
-      <div className={`mb-8 flex items-center justify-between rounded-2xl bg-gradient-to-br ${color.gradient} p-6 text-white shadow-md`}>
-        <h1 className="font-display text-2xl font-semibold">{classFolder?.name}</h1>
-        <button
-          onClick={() => void handleDeleteClass()}
-          className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Delete
-        </button>
-      </div>
+      {isEditing ? (
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <label className="mb-1.5 block text-sm font-medium text-slate-600">Class name</label>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          />
+          <label className="mb-1.5 block text-sm font-medium text-slate-600">Color</label>
+          <div className="mb-4 flex gap-2">
+            {CLASS_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setEditColor(c.id)}
+                aria-label={c.label}
+                className={`h-7 w-7 rounded-full ${c.dot} transition-transform hover:scale-110 ${
+                  editColor === c.id ? "ring-2 ring-offset-2 ring-slate-400" : ""
+                }`}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => void handleSaveEdit()}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" />
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={`mb-8 flex items-center justify-between rounded-2xl bg-gradient-to-br ${color.gradient} p-6 text-white shadow-md`}>
+          <h1 className="font-display text-2xl font-semibold">{classFolder?.name}</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </button>
+            <button
+              onClick={() => void handleDeleteClass()}
+              className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {classId && (

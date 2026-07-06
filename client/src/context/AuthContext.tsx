@@ -5,6 +5,7 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
+  avatarUrl: string | null;
 }
 
 export interface AuthContextValue {
@@ -13,6 +14,7 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (updates: { displayName?: string; avatarUrl?: string | null }) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,8 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function updateProfile(updates: { displayName?: string; avatarUrl?: string | null }) {
+    const updated = await api.patch<User>("/auth/me", updates);
+    setUser(updated);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

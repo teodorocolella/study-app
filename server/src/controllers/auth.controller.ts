@@ -10,6 +10,10 @@ import {
   verifyRefreshToken,
 } from "../services/auth.service.js";
 
+function publicUser(user: { id: string; email: string; displayName: string; avatarUrl: string | null }) {
+  return { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: user.avatarUrl };
+}
+
 const REFRESH_COOKIE_NAME = "refreshToken";
 const REFRESH_COOKIE_PATH = "/api/auth";
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -64,7 +68,7 @@ export async function signup(req: Request, res: Response) {
   const accessToken = await issueTokens(res, user.id);
   res.status(201).json({
     accessToken,
-    user: { id: user.id, email: user.email, displayName: user.displayName },
+    user: publicUser(user),
   });
 }
 
@@ -90,7 +94,7 @@ export async function login(req: Request, res: Response) {
   const accessToken = await issueTokens(res, user.id);
   res.json({
     accessToken,
-    user: { id: user.id, email: user.email, displayName: user.displayName },
+    user: publicUser(user),
   });
 }
 
@@ -135,5 +139,28 @@ export async function me(req: Request, res: Response) {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json({ id: user.id, email: user.email, displayName: user.displayName });
+  res.json(publicUser(user));
+}
+
+const updateProfileSchema = z.object({
+  displayName: z.string().min(1).max(80).optional(),
+  avatarUrl: z
+    .string()
+    .max(1_500_000, "Image is too large")
+    .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
+    .nullable()
+    .optional(),
+});
+
+export async function updateProfile(req: Request, res: Response) {
+  const parsed = updateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const user = await prisma.user.update({
+    where: { id: req.userId },
+    data: parsed.data,
+  });
+  res.json(publicUser(user));
 }
