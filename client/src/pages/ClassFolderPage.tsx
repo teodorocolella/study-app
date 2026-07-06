@@ -68,7 +68,7 @@ export function ClassFolderPage() {
   async function handleDeleteClass() {
     if (!classId || !confirm("Delete this class and everything in it?")) return;
     await api.delete(`/classes/${classId}`);
-    navigate("/");
+    navigate("/dashboard");
   }
 
   function startEdit() {
@@ -101,7 +101,7 @@ export function ClassFolderPage() {
   return (
     <AppShell>
       <Link
-        to="/"
+        to="/dashboard"
         className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />

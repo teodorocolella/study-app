@@ -19,7 +19,7 @@ export function SignupPage() {
     setSubmitting(true);
     try {
       await signup(email, password, displayName);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
     } finally {

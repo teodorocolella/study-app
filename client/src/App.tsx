@@ -6,6 +6,7 @@ import { initAnalytics, trackPageView } from "./lib/analytics";
 import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NoteEditorPage } from "./pages/NoteEditorPage";
 import { SignupPage } from "./pages/SignupPage";
@@ -34,9 +35,10 @@ function App() {
     <AuthProvider>
       <AnalyticsTracker />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/" element={protect(<DashboardPage />)} />
+        <Route path="/dashboard" element={protect(<DashboardPage />)} />
         <Route path="/classes/:classId" element={protect(<ClassFolderPage />)} />
         <Route
           path="/classes/:classId/notes/:noteId"
