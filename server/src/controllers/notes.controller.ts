@@ -16,7 +16,7 @@ export async function listNotes(req: Request, res: Response) {
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
-  contentMarkdown: z.string().default(""),
+  contentHtml: z.string().default(""),
 });
 
 export async function createNote(req: Request, res: Response) {
@@ -40,7 +40,7 @@ export async function getNote(req: Request, res: Response) {
 
 const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  contentMarkdown: z.string().optional(),
+  contentHtml: z.string().optional(),
 });
 
 export async function updateNote(req: Request, res: Response) {

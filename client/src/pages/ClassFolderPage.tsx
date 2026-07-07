@@ -44,7 +44,7 @@ export function ClassFolderPage() {
     try {
       const note = await api.post<Note>(`/classes/${classId}/notes`, {
         title: newNoteTitle.trim(),
-        contentMarkdown: "",
+        contentHtml: "",
       });
       setNewNoteTitle("");
       navigate(`/classes/${classId}/notes/${note.id}`);

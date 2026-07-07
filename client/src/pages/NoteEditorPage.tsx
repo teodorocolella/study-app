@@ -1,10 +1,14 @@
+import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { ArrowLeft, Check, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { EditorToolbar } from "../components/notes/EditorToolbar";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -12,11 +16,11 @@ export function NoteEditorPage() {
   const { classId, noteId } = useParams<{ classId: string; noteId: string }>();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleRef = useRef("");
 
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState("");
@@ -24,17 +28,49 @@ export function NoteEditorPage() {
   const [generating, setGenerating] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
 
+  function scheduleSave(nextTitle: string, nextContentHtml: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setStatus("saving");
+    debounceRef.current = setTimeout(async () => {
+      try {
+        await api.patch(`/notes/${noteId}`, { title: nextTitle, contentHtml: nextContentHtml });
+        setStatus("saved");
+      } catch {
+        setStatus("error");
+      }
+    }, 700);
+  }
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Placeholder.configure({ placeholder: "Write your notes…" }),
+    ],
+    content: "",
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm max-w-none focus:outline-none min-h-[55vh] p-4",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      scheduleSave(titleRef.current, editor.getHTML());
+    },
+  });
+
   useEffect(() => {
-    if (!noteId) return;
+    if (!noteId || !editor) return;
     api
       .get<Note>(`/notes/${noteId}`)
       .then((note) => {
         setTitle(note.title);
-        setContent(note.contentMarkdown);
+        titleRef.current = note.title;
+        editor.commands.setContent(note.contentHtml || "");
         setAiSummary(note.aiSummary);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load note"));
-  }, [noteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId, editor]);
 
   useEffect(() => {
     if (!classId) return;
@@ -47,27 +83,10 @@ export function NoteEditorPage() {
       .catch(() => {});
   }, [classId]);
 
-  function scheduleSave(nextTitle: string, nextContent: string) {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    setStatus("saving");
-    debounceRef.current = setTimeout(async () => {
-      try {
-        await api.patch(`/notes/${noteId}`, { title: nextTitle, contentMarkdown: nextContent });
-        setStatus("saved");
-      } catch {
-        setStatus("error");
-      }
-    }, 700);
-  }
-
   function handleTitleChange(value: string) {
     setTitle(value);
-    scheduleSave(value, content);
-  }
-
-  function handleContentChange(value: string) {
-    setContent(value);
-    scheduleSave(title, value);
+    titleRef.current = value;
+    scheduleSave(value, editor?.getHTML() ?? "");
   }
 
   async function handleDelete() {
@@ -174,24 +193,19 @@ export function NoteEditorPage() {
       </div>
 
       {aiSummary && (
-        <div className="animate-flip-in mb-4 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 prose prose-sm max-w-none">
+        <div className="animate-flip-in mb-4 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
           <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-500">
             <Sparkles className="h-3.5 w-3.5" />
             AI summary
           </p>
-          <ReactMarkdown>{aiSummary}</ReactMarkdown>
+          <p className="whitespace-pre-wrap text-sm text-slate-700">{aiSummary}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <textarea
-          value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
-          placeholder="Write your notes in markdown…"
-          className="h-[60vh] resize-none rounded-xl border border-slate-300 p-4 font-mono text-sm shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-        />
-        <div className="h-[60vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm prose prose-sm max-w-none">
-          <ReactMarkdown>{content || "*Preview will appear here*"}</ReactMarkdown>
+      <div>
+        <EditorToolbar editor={editor} />
+        <div className="rounded-b-xl border border-slate-300 bg-white shadow-sm">
+          <EditorContent editor={editor} />
         </div>
       </div>
     </AppShell>

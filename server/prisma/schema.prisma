@@ -47,14 +47,14 @@ model ClassFolder {
 }
 
 model Note {
-  id              String      @id @default(cuid())
-  title           String
-  contentMarkdown String      @db.Text
-  aiSummary       String?     @db.Text
-  classFolderId   String
-  classFolder     ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  title         String
+  contentHtml   String      @db.Text
+  aiSummary     String?     @db.Text
+  classFolderId String
+  classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([classFolderId])
 }

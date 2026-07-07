@@ -9,7 +9,7 @@ export interface ClassFolder {
 export interface Note {
   id: string;
   title: string;
-  contentMarkdown: string;
+  contentHtml: string;
   aiSummary: string | null;
   classFolderId: string;
   createdAt: string;

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { stripHtml } from "../lib/html.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import {
@@ -42,7 +43,7 @@ export async function postGenerateFlashcards(req: Request, res: Response) {
   let text = rawText;
   if (noteId) {
     const note = await getOwnedNote(req.userId, noteId);
-    text = note.contentMarkdown;
+    text = stripHtml(note.contentHtml);
   }
   if (!text || !text.trim()) {
     res.status(400).json({ error: "No note text provided" });
@@ -79,10 +80,10 @@ export async function postTutorChat(req: Request, res: Response) {
 
   const notes = await prisma.note.findMany({
     where: { classFolderId: classId },
-    select: { title: true, contentMarkdown: true },
+    select: { title: true, contentHtml: true },
   });
   const classContext = notes
-    .map((n) => `## ${n.title}\n${n.contentMarkdown}`)
+    .map((n) => `${n.title}\n${stripHtml(n.contentHtml)}`)
     .join("\n\n")
     .slice(0, 20000);
 
@@ -105,7 +106,7 @@ export async function postSummarizeNote(req: Request, res: Response) {
   const note = await getOwnedNote(req.userId, parsed.data.noteId);
 
   try {
-    const summary = await summarizeNote(note.contentMarkdown);
+    const summary = await summarizeNote(stripHtml(note.contentHtml));
     const updated = await prisma.note.update({ where: { id: note.id }, data: { aiSummary: summary } });
     res.json(updated);
   } catch (err) {
