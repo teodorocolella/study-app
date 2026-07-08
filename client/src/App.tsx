@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
-import { initAnalytics, trackPageView } from "./lib/analytics";
+import { trackPageView } from "./lib/analytics";
 import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
@@ -18,10 +18,6 @@ function protect(element: React.ReactNode) {
 
 function AnalyticsTracker() {
   const location = useLocation();
-
-  useEffect(() => {
-    initAnalytics();
-  }, []);
 
   useEffect(() => {
     trackPageView(location.pathname);
