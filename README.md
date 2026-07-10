@@ -8,7 +8,7 @@ an AI tutor powered by the Claude API — built for middle school through high s
 - **Class folders** — organize notes and flashcard decks by subject/class
 - **Flashcards with spaced repetition** — an SM-2 scheduling algorithm resurfaces cards you miss
   sooner and pushes cards you know well further out, so study time stays focused
-- **Markdown notes** — a simple notes editor per class folder with a live preview
+- **Notes** — a simple notes editor per class folder with a live summary feature, and the ability to generate flashcards based on the notes
 - **AI tutor (Claude API)**:
   - Generate flashcards automatically from pasted or typed notes
   - Chat with a tutor scoped to a specific class folder's notes
