@@ -2,11 +2,11 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowLeft, Check, Loader2, Share2, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Check, Loader2, Share2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
-import type { Deck, Note } from "../api/types";
+import type { Deck, ExerciseType, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { EditorToolbar } from "../components/notes/EditorToolbar";
 import { ShareModal } from "../components/share/ShareModal";
@@ -29,6 +29,14 @@ export function NoteEditorPage() {
   const [generating, setGenerating] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [quizTypes, setQuizTypes] = useState<ExerciseType[]>([
+    "mcq",
+    "true_false",
+    "fill_blank",
+    "short_answer",
+  ]);
+  const [quizCount, setQuizCount] = useState(10);
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
   function scheduleSave(nextTitle: string, nextContentHtml: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -130,6 +138,31 @@ export function NoteEditorPage() {
     }
   }
 
+  async function handleGenerateQuiz() {
+    if (!classId || quizTypes.length === 0) return;
+    setGeneratingQuiz(true);
+    setAiMessage(null);
+    try {
+      const set = await api.post<{ id: string }>("/ai/generate-exercises", {
+        noteId,
+        classId,
+        types: quizTypes,
+        count: quizCount,
+      });
+      navigate(`/practice/${set.id}`);
+    } catch (err) {
+      setAiMessage(err instanceof ApiError ? err.message : "Failed to generate the quiz");
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  }
+
+  function toggleQuizType(type: ExerciseType) {
+    setQuizTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  }
+
   return (
     <AppShell>
       <Link
@@ -199,6 +232,49 @@ export function NoteEditorPage() {
         </button>
 
         {aiMessage && <span className="text-sm text-slate-500">{aiMessage}</span>}
+
+        <div className="flex w-full flex-wrap items-center gap-3 border-t border-slate-100 pt-3">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+            <BrainCircuit className="h-3.5 w-3.5 text-violet-500" />
+            Practice quiz:
+          </span>
+          {(
+            [
+              ["mcq", "Multiple choice"],
+              ["true_false", "True/false"],
+              ["fill_blank", "Fill in blank"],
+              ["short_answer", "Short answer"],
+            ] as [ExerciseType, string][]
+          ).map(([type, label]) => (
+            <label key={type} className="flex items-center gap-1.5 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={quizTypes.includes(type)}
+                onChange={() => toggleQuizType(type)}
+                className="accent-violet-600"
+              />
+              {label}
+            </label>
+          ))}
+          <select
+            value={quizCount}
+            onChange={(e) => setQuizCount(Number(e.target.value))}
+            className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value={5}>5 questions</option>
+            <option value={10}>10 questions</option>
+            <option value={15}>15 questions</option>
+            <option value={20}>20 questions</option>
+          </select>
+          <button
+            onClick={() => void handleGenerateQuiz()}
+            disabled={generatingQuiz || quizTypes.length === 0}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.02] disabled:opacity-50"
+          >
+            {generatingQuiz ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5" />}
+            {generatingQuiz ? "Generating quiz…" : "Generate quiz"}
+          </button>
+        </div>
       </div>
 
       {aiSummary && (

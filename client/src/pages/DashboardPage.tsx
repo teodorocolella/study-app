@@ -1,4 +1,15 @@
-import { BookOpen, Flame, Layers, Play, Plus, Sparkles } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  BrainCircuit,
+  CalendarCheck,
+  Flame,
+  Layers,
+  MessageSquare,
+  Play,
+  Plus,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
@@ -68,10 +79,44 @@ export function DashboardPage() {
         <Sparkles className="hidden h-16 w-16 text-white/20 sm:block" strokeWidth={1.5} />
       </div>
 
-      <div className="mb-10 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={Layers} label="Due today" value={summary?.totalDue ?? "—"} accent="violet" />
         <StatCard icon={BookOpen} label="Studied today" value={summary?.studiedToday ?? "—"} accent="sky" />
+        <StatCard icon={CalendarCheck} label="This week" value={summary?.studiedThisWeek ?? "—"} accent="emerald" />
         <StatCard icon={Flame} label="Day streak" value={summary?.streak ?? "—"} accent="amber" />
+      </div>
+
+      <div className="mb-10 grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <BarChart3 className="h-4 w-4 text-slate-400" />
+            Cards reviewed, last 7 days
+          </p>
+          <ActivityChart data={summary?.dailyActivity ?? []} />
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-slate-700">Quick actions</p>
+          <div className="space-y-2">
+            <QuickAction
+              icon={Sparkles}
+              label="Ask your AI assistant"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-assistant"))}
+            />
+            <QuickAction
+              icon={MessageSquare}
+              label="Message a classmate"
+              onClick={() => navigate("/messages")}
+            />
+            {summary && summary.totalDue > 0 && (
+              <QuickAction
+                icon={Play}
+                label={`Review ${summary.totalDue} due card${summary.totalDue === 1 ? "" : "s"}`}
+                onClick={() => navigate("/study")}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <h2 className="font-display mb-4 text-lg font-semibold text-slate-800">Your classes</h2>
@@ -88,15 +133,31 @@ export function DashboardPage() {
               className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${color.gradient}`} />
-              <div className="flex items-center justify-between pl-2">
-                <span className="font-medium text-slate-700 transition-colors group-hover:text-slate-900">
-                  {c.name}
-                </span>
-                {c.dueCount > 0 && (
-                  <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
-                    {c.dueCount} due
+              <div className="pl-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-slate-700 transition-colors group-hover:text-slate-900">
+                    {c.name}
                   </span>
-                )}
+                  {c.dueCount > 0 && (
+                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                      {c.dueCount} due
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2.5 flex items-center gap-3 text-xs text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" />
+                    {c.noteCount} note{c.noteCount === 1 ? "" : "s"}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Layers className="h-3 w-3" />
+                    {c.deckCount} deck{c.deckCount === 1 ? "" : "s"}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <BrainCircuit className="h-3 w-3" />
+                    {c.quizCount} quiz{c.quizCount === 1 ? "" : "zes"}
+                  </span>
+                </div>
               </div>
             </Link>
           );
@@ -144,6 +205,62 @@ export function DashboardPage() {
   );
 }
 
+/** 7-day single-series column chart: violet marks, muted text labels, per-bar hover value. */
+function ActivityChart({ data }: { data: { date: string; count: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  const maxIndex = data.findIndex((d) => d.count === max);
+
+  return (
+    <div className="flex h-32 items-end gap-2">
+      {data.map((day, i) => {
+        const heightPct = (day.count / max) * 100;
+        const weekday = new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, {
+          weekday: "short",
+        });
+        return (
+          <div key={day.date} className="group relative flex h-full flex-1 flex-col justify-end">
+            {day.count > 0 && i === maxIndex && (
+              <span className="mb-1 text-center text-xs font-semibold text-slate-600">{day.count}</span>
+            )}
+            <div className="relative flex w-full justify-center">
+              <span className="pointer-events-none absolute -top-7 hidden rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white group-hover:block">
+                {day.count}
+              </span>
+              <div
+                className={`w-full rounded-t ${day.count > 0 ? "bg-violet-500 group-hover:bg-violet-600" : "bg-slate-200"}`}
+                style={{ height: day.count > 0 ? `${Math.max(heightPct, 6)}%` : "3px" }}
+                aria-label={`${weekday}: ${day.count} reviews`}
+              />
+            </div>
+            <span className="mt-1.5 text-center text-[11px] font-medium text-slate-400">{weekday}</span>
+          </div>
+        );
+      })}
+      {data.length === 0 && <p className="text-sm text-slate-400">No activity yet.</p>}
+    </div>
+  );
+}
+
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof Sparkles;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:border-violet-200 hover:bg-violet-50/50 hover:text-violet-700"
+    >
+      <Icon className="h-4 w-4 text-violet-500" />
+      {label}
+    </button>
+  );
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -153,12 +270,13 @@ function StatCard({
   icon: typeof Layers;
   label: string;
   value: string | number;
-  accent: "violet" | "sky" | "amber";
+  accent: "violet" | "sky" | "amber" | "emerald";
 }) {
   const accents = {
     violet: "bg-violet-100 text-violet-600",
     sky: "bg-sky-100 text-sky-600",
     amber: "bg-amber-100 text-amber-600",
+    emerald: "bg-emerald-100 text-emerald-600",
   };
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

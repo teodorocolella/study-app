@@ -6,11 +6,14 @@ import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import { runAssistant, type AssistantEvent } from "../services/assistant.service.js";
 import {
+  EXERCISE_TYPES,
   explainDifferently,
+  generateExercisesFromNotes,
   generateFlashcardsFromNotes,
   summarizeNote,
 } from "../services/claude.service.js";
 import {
+  getOwnedClassFolder,
   getOwnedDeck,
   getOwnedFlashcard,
   getOwnedNote,
@@ -55,6 +58,66 @@ export async function postGenerateFlashcards(req: Request, res: Response) {
       cards.map((c) => prisma.flashcard.create({ data: { front: c.front, back: c.back, deckId } })),
     );
     res.status(201).json(created);
+  } catch (err) {
+    handleClaudeError(err);
+  }
+}
+
+const generateExercisesSchema = z.object({
+  noteId: z.string().optional(),
+  rawText: z.string().optional(),
+  classId: z.string(),
+  setName: z.string().min(1).max(120).optional(),
+  types: z.array(z.enum(EXERCISE_TYPES)).min(1).default([...EXERCISE_TYPES]),
+  count: z.number().int().min(3).max(25).optional(),
+});
+
+export async function postGenerateExercises(req: Request, res: Response) {
+  const parsed = generateExercisesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const { noteId, rawText, classId, setName, types, count } = parsed.data;
+  await getOwnedClassFolder(req.userId, classId);
+
+  let text = rawText;
+  let defaultName = "Practice quiz";
+  if (noteId) {
+    const note = await getOwnedNote(req.userId, noteId);
+    text = stripHtml(note.contentHtml);
+    defaultName = `${note.title} practice`;
+  }
+  if (!text || !text.trim()) {
+    res.status(400).json({ error: "No note text provided" });
+    return;
+  }
+
+  try {
+    const generated = await generateExercisesFromNotes(text, types, count ?? 10);
+    const set = await prisma.exerciseSet.create({
+      data: {
+        name: setName ?? defaultName,
+        classFolderId: classId,
+        exercises: {
+          create: generated.map((e, i) => ({
+            type: e.type,
+            prompt: e.prompt,
+            optionsJson: e.type === "mcq" && e.options ? JSON.stringify(e.options) : null,
+            answer: e.type === "true_false" ? e.answer.toLowerCase() : e.answer,
+            explanation: e.explanation,
+            position: i,
+          })),
+        },
+      },
+      include: { _count: { select: { exercises: true } } },
+    });
+    res.status(201).json({
+      id: set.id,
+      name: set.name,
+      classFolderId: set.classFolderId,
+      exerciseCount: set._count.exercises,
+    });
   } catch (err) {
     handleClaudeError(err);
   }

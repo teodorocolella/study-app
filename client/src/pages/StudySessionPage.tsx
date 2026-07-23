@@ -31,6 +31,12 @@ export function StudySessionPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [gradeCounts, setGradeCounts] = useState<Record<GradeLabel, number>>({
+    again: 0,
+    hard: 0,
+    good: 0,
+    easy: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
@@ -85,6 +91,7 @@ export function StudySessionPage() {
     try {
       await api.post(`/cards/${current.id}/review`, { grade });
       setReviewedCount((n) => n + 1);
+      setGradeCounts((prev) => ({ ...prev, [grade]: prev[grade] + 1 }));
       setQueue((prev) => prev.slice(1));
       setRevealed(false);
       setExplanation(null);
@@ -149,6 +156,22 @@ export function StudySessionPage() {
               ? `You reviewed ${reviewedCount} card${reviewedCount === 1 ? "" : "s"}.`
               : "No cards are due for review right now."}
           </p>
+          {reviewedCount > 0 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {GRADE_BUTTONS.map((btn) => {
+                const Icon = btn.icon;
+                return (
+                  <span
+                    key={btn.label}
+                    className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${btn.className}`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {btn.text}: {gradeCounts[btn.label]}
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <Link
             to={backTo}
             className="mt-5 inline-block rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"

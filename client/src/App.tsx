@@ -6,12 +6,15 @@ import { trackPageView } from "./lib/analytics";
 import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
+import { ExerciseSetPage } from "./pages/ExerciseSetPage";
+import { PracticeSessionPage } from "./pages/PracticeSessionPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MessagesPage } from "./pages/MessagesPage";
 import { NoteEditorPage } from "./pages/NoteEditorPage";
 import { SignupPage } from "./pages/SignupPage";
 import { StudySessionPage } from "./pages/StudySessionPage";
+import { WelcomePage } from "./pages/WelcomePage";
 
 function protect(element: React.ReactNode) {
   return <RequireAuth>{element}</RequireAuth>;
@@ -35,6 +38,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/welcome" element={protect(<WelcomePage />)} />
         <Route path="/dashboard" element={protect(<DashboardPage />)} />
         <Route path="/classes/:classId" element={protect(<ClassFolderPage />)} />
         <Route
@@ -43,6 +47,8 @@ function App() {
         />
         <Route path="/decks/:deckId" element={protect(<DeckPage />)} />
         <Route path="/decks/:deckId/study" element={protect(<StudySessionPage />)} />
+        <Route path="/practice/:setId" element={protect(<ExerciseSetPage />)} />
+        <Route path="/practice/:setId/run" element={protect(<PracticeSessionPage />)} />
         <Route path="/study" element={protect(<StudySessionPage />)} />
         <Route path="/messages" element={protect(<MessagesPage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />

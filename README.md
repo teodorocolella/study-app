@@ -16,8 +16,15 @@ an AI tutor powered by the Claude API — built for middle school through high s
   - Ask it to create flashcards or notes for you — it writes them straight into your classes
   - Streams replies live and knows which page you're on
   - Plus: generate flashcards from a note, summarize notes, and "explain differently" during study
+- **Practice quizzes** — mixed exercise sets per class: multiple choice, true/false,
+  fill-in-the-blank, and short answers graded by Claude with feedback; generate a quiz
+  from any note (choosing which types), write questions by hand, or ask the assistant;
+  score screen with "retry wrong answers" and attempt history
 - **Study sessions** — per-deck review or one "review everything due" session across all
-  classes, with keyboard shortcuts (Space to flip, 1–4 to grade)
+  classes, with keyboard shortcuts (Space to flip, 1–4 to grade) and an end-of-session
+  grade breakdown
+- **Guided onboarding** — new accounts get an integrated welcome tour that ends by
+  creating their first class
 - **Messaging & sharing** — message classmates by email and share copies of notes and
   flashcard decks; recipients save them into their own classes
 - **Email reminders** — an optional daily email nudge when cards are due and you haven't

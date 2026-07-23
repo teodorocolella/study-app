@@ -98,7 +98,15 @@ export async function getDashboardSummary(userId: string) {
   const startOfWeek = addDays(startOfToday, -6);
 
   const [classFolders, dueCards, reviewLogs] = await Promise.all([
-    prisma.classFolder.findMany({ where: { userId }, select: { id: true, name: true, colorTag: true } }),
+    prisma.classFolder.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        colorTag: true,
+        _count: { select: { notes: true, decks: true, exerciseSets: true } },
+      },
+    }),
     getDueCards(userId),
     prisma.reviewLog.findMany({
       where: { userId, reviewedAt: { gte: addDays(startOfToday, -365) } },
@@ -116,6 +124,17 @@ export async function getDashboardSummary(userId: string) {
   const studiedToday = reviewLogs.filter((log) => log.reviewedAt >= startOfToday).length;
   const studiedThisWeek = reviewLogs.filter((log) => log.reviewedAt >= startOfWeek).length;
 
+  // Reviews per day for the last 7 days (oldest first) — powers the dashboard chart.
+  const dailyActivity = Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(startOfToday, i - 6);
+    return { date: toDateKey(day), count: 0 };
+  });
+  const byDate = new Map(dailyActivity.map((d) => [d.date, d]));
+  for (const log of reviewLogs) {
+    const bucket = byDate.get(toDateKey(log.reviewedAt));
+    if (bucket) bucket.count++;
+  }
+
   let streakCursor = studiedDays.has(toDateKey(now)) ? now : addDays(now, -1);
   let streak = 0;
   while (studiedDays.has(toDateKey(streakCursor))) {
@@ -129,10 +148,14 @@ export async function getDashboardSummary(userId: string) {
       name: cf.name,
       colorTag: cf.colorTag,
       dueCount: dueCountByClass.get(cf.id) ?? 0,
+      noteCount: cf._count.notes,
+      deckCount: cf._count.decks,
+      quizCount: cf._count.exerciseSets,
     })),
     totalDue: dueCards.length,
     studiedToday,
     studiedThisWeek,
     streak,
+    dailyActivity,
   };
 }

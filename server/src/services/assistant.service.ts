@@ -58,6 +58,18 @@ export async function buildWorkspaceContext(userId: string): Promise<string> {
           },
         },
       },
+      exerciseSets: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          _count: { select: { exercises: true } },
+          attempts: {
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { score: true, total: true },
+          },
+        },
+      },
     },
   });
 
@@ -104,6 +116,12 @@ export async function buildWorkspaceContext(userId: string): Promise<string> {
       if (deck.cards.length > CARDS_PER_DECK_LIMIT) {
         push(`    (…and ${deck.cards.length - CARDS_PER_DECK_LIMIT} more cards)`);
       }
+    }
+
+    for (const set of cf.exerciseSets) {
+      const last = set.attempts[0];
+      const lastText = last ? `, last score ${last.score}/${last.total}` : ", not attempted yet";
+      push(`  PRACTICE SET: "${set.name}" (setId: ${set.id}, ${set._count.exercises} exercises${lastText})`);
     }
   }
 
@@ -184,6 +202,38 @@ const assistantTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "create_exercise_set",
+    description:
+      'Create a practice quiz (exercise set) for the student. Call this when they ask for practice questions, a quiz, or exercises. You write the exercises yourself from their notes. Types: "mcq" (question + exactly 4 options, answer copied exactly from options, vary the correct position), "true_false" (a statement; answer "true" or "false"; mix both), "fill_blank" (sentence with the key term replaced by "_____"; answer is the missing 1-3 words), "short_answer" (asks the student to explain in their own words; answer is a model answer listing what a good response includes). Give every exercise a brief explanation of the correct answer. Mix types unless the student asks for specific ones.',
+    input_schema: {
+      type: "object",
+      properties: {
+        classId: { type: "string", description: "ID of the class this practice set belongs to." },
+        name: { type: "string", description: "Short name for the practice set." },
+        exercises: {
+          type: "array",
+          description: "The exercises to create.",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: ["mcq", "true_false", "fill_blank", "short_answer"] },
+              prompt: { type: "string" },
+              options: {
+                type: "array",
+                items: { type: "string" },
+                description: "mcq only: exactly 4 answer choices.",
+              },
+              answer: { type: "string" },
+              explanation: { type: "string" },
+            },
+            required: ["type", "prompt", "answer"],
+          },
+        },
+      },
+      required: ["classId", "name", "exercises"],
+    },
+  },
+  {
     name: "create_note",
     description:
       "Create a new note in one of the student's classes. Call this when the student asks you to write up, save, or turn something into a note (for example a study guide or a summary). Write the content as plain text with blank lines between paragraphs.",
@@ -213,6 +263,23 @@ const createNoteInput = z.object({
   classId: z.string(),
   title: z.string().min(1).max(200),
   content: z.string().min(1).max(20000),
+});
+
+const createExerciseSetInput = z.object({
+  classId: z.string(),
+  name: z.string().min(1).max(120),
+  exercises: z
+    .array(
+      z.object({
+        type: z.enum(["mcq", "true_false", "fill_blank", "short_answer"]),
+        prompt: z.string().min(1).max(2000),
+        options: z.array(z.string().min(1).max(500)).min(2).max(6).optional(),
+        answer: z.string().min(1).max(4000),
+        explanation: z.string().max(4000).optional(),
+      }),
+    )
+    .min(1)
+    .max(25),
 });
 
 function plainTextToHtml(text: string) {
@@ -266,6 +333,52 @@ async function executeAssistantTool(
     };
   }
 
+  if (toolName === "create_exercise_set") {
+    const parsed = createExerciseSetInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const { classId, name, exercises } = parsed.data;
+    const cf = await getOwnedClassFolder(userId, classId).catch(() => null);
+    if (!cf) return { result: `No class with id ${classId} exists for this student.`, isError: true };
+
+    const invalidMcq = exercises.find(
+      (e) => e.type === "mcq" && (!e.options || !e.options.includes(e.answer)),
+    );
+    if (invalidMcq) {
+      return {
+        result: "Every mcq exercise needs an options array that contains the answer exactly. Fix and retry.",
+        isError: true,
+      };
+    }
+
+    const set = await prisma.exerciseSet.create({
+      data: {
+        name,
+        classFolderId: cf.id,
+        exercises: {
+          create: exercises.map((e, i) => ({
+            type: e.type,
+            prompt: e.prompt,
+            optionsJson: e.type === "mcq" && e.options ? JSON.stringify(e.options) : null,
+            answer: e.type === "true_false" ? e.answer.toLowerCase() : e.answer,
+            explanation: e.explanation ?? null,
+            position: i,
+          })),
+        },
+      },
+    });
+
+    send({
+      type: "action",
+      label: `Created practice set "${name}" (${exercises.length} questions)`,
+      href: `/practice/${set.id}`,
+    });
+    return {
+      result: `Created the practice set "${name}" with ${exercises.length} exercises in "${cf.name}". Confirm briefly and encourage them to try it.`,
+    };
+  }
+
   if (toolName === "create_note") {
     const parsed = createNoteInput.safeParse(toolInput);
     if (!parsed.success) {
@@ -306,7 +419,7 @@ function buildSystemPrompt(workspaceContext: string, pageContext: string) {
     "- Answer questions using their notes when relevant; if their notes are wrong or incomplete, gently point it out.",
     "- When asked what to study, look at the due counts and recommend the classes and decks with the most cards due.",
     "- When asked to quiz them, ask one question at a time from their notes or cards, wait for their answer, then give feedback before the next question.",
-    "- Use the create_flashcards tool when they ask for flashcards, and the create_note tool when they ask you to save a study guide or summary as a note. After a tool call, confirm what you did in one short sentence.",
+    "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note. After a tool call, confirm what you did in one short sentence.",
     "- Keep answers focused — a short paragraph or two, not an essay. Adapt to what the student seems to already know.",
     NO_MARKDOWN,
   ].join("\n");

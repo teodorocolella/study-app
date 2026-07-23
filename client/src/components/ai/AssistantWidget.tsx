@@ -72,6 +72,14 @@ export function AssistantWidget() {
   }, [open]);
 
   useEffect(() => {
+    function onOpenRequest() {
+      setOpen(true);
+    }
+    window.addEventListener("open-assistant", onOpenRequest);
+    return () => window.removeEventListener("open-assistant", onOpenRequest);
+  }, []);
+
+  useEffect(() => {
     sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.slice(-40)));
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);

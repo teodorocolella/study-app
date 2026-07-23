@@ -32,6 +32,57 @@ export interface Flashcard {
   createdAt: string;
 }
 
+export type ExerciseType = "mcq" | "true_false" | "fill_blank" | "short_answer";
+
+export interface Exercise {
+  id: string;
+  setId: string;
+  type: ExerciseType;
+  prompt: string;
+  options: string[] | null;
+  answer: string;
+  explanation: string | null;
+  position: number;
+}
+
+export interface ExerciseSetSummary {
+  id: string;
+  name: string;
+  classFolderId: string;
+  createdAt: string;
+  exerciseCount: number;
+  lastAttempt: { score: number; total: number; createdAt: string } | null;
+}
+
+export interface ExerciseSetDetail {
+  id: string;
+  name: string;
+  classFolderId: string;
+  createdAt: string;
+  exercises: Exercise[];
+  attempts: { id: string; score: number; total: number; createdAt: string }[];
+}
+
+export interface AttemptResultRow {
+  exerciseId: string;
+  type: ExerciseType;
+  prompt: string;
+  options: string[] | null;
+  userAnswer: string;
+  correctAnswer: string;
+  correct: boolean;
+  explanation: string | null;
+  feedback: string | null;
+}
+
+export interface AttemptResult {
+  attemptId: string;
+  score: number;
+  total: number;
+  results: AttemptResultRow[];
+  createdAt: string;
+}
+
 export interface MessagePartner {
   id: string;
   displayName: string;
@@ -72,9 +123,18 @@ export interface ImportResult {
 }
 
 export interface DashboardSummary {
-  classes: { classId: string; name: string; colorTag: string | null; dueCount: number }[];
+  classes: {
+    classId: string;
+    name: string;
+    colorTag: string | null;
+    dueCount: number;
+    noteCount: number;
+    deckCount: number;
+    quizCount: number;
+  }[];
   totalDue: number;
   studiedToday: number;
   studiedThisWeek: number;
   streak: number;
+  dailyActivity: { date: string; count: number }[];
 }

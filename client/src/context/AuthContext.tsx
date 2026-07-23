@@ -6,6 +6,7 @@ export interface User {
   email: string;
   displayName: string;
   avatarUrl: string | null;
+  hasOnboarded: boolean;
 }
 
 export interface AuthContextValue {
@@ -14,7 +15,11 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (updates: { displayName?: string; avatarUrl?: string | null }) => Promise<void>;
+  updateProfile: (updates: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    hasOnboarded?: true;
+  }) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -73,7 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  async function updateProfile(updates: { displayName?: string; avatarUrl?: string | null }) {
+  async function updateProfile(updates: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    hasOnboarded?: true;
+  }) {
     const updated = await api.patch<User>("/auth/me", updates);
     setUser(updated);
   }

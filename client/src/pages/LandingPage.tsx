@@ -27,9 +27,9 @@ const FEATURES = [
   },
   {
     icon: Wand2,
-    title: "Flashcards from notes",
+    title: "Quizzes & flashcards from notes",
     description:
-      "Turn any note into a ready-to-study deck in one click — Claude writes the questions and answers for you.",
+      "Turn any note into a flashcard deck or a full practice quiz in one click — multiple choice, true/false, fill-in-the-blank, and short answers that Claude grades with feedback.",
   },
   {
     icon: Share2,

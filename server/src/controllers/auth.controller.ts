@@ -10,8 +10,20 @@ import {
   verifyRefreshToken,
 } from "../services/auth.service.js";
 
-function publicUser(user: { id: string; email: string; displayName: string; avatarUrl: string | null }) {
-  return { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: user.avatarUrl };
+function publicUser(user: {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  hasOnboarded: boolean;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    hasOnboarded: user.hasOnboarded,
+  };
 }
 
 const REFRESH_COOKIE_NAME = "refreshToken";
@@ -150,6 +162,7 @@ const updateProfileSchema = z.object({
     .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
     .nullable()
     .optional(),
+  hasOnboarded: z.literal(true).optional(),
 });
 
 export async function updateProfile(req: Request, res: Response) {

@@ -1,8 +1,8 @@
-import { ArrowLeft, Check, FileText, Layers, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Check, FileText, Layers, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
-import type { ClassFolder, Deck, Note } from "../api/types";
+import type { ClassFolder, Deck, ExerciseSetSummary, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { CLASS_COLORS, getClassColor } from "../lib/classColors";
 
@@ -12,8 +12,10 @@ export function ClassFolderPage() {
   const [classFolder, setClassFolder] = useState<ClassFolder | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [decks, setDecks] = useState<Deck[]>([]);
+  const [exerciseSets, setExerciseSets] = useState<ExerciseSetSummary[]>([]);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newDeckName, setNewDeckName] = useState("");
+  const [newSetName, setNewSetName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -22,14 +24,16 @@ export function ClassFolderPage() {
 
   async function load() {
     if (!classId) return;
-    const [cf, noteList, deckList] = await Promise.all([
+    const [cf, noteList, deckList, setList] = await Promise.all([
       api.get<ClassFolder>(`/classes/${classId}`),
       api.get<Note[]>(`/classes/${classId}/notes`),
       api.get<Deck[]>(`/classes/${classId}/decks`),
+      api.get<ExerciseSetSummary[]>(`/classes/${classId}/exercise-sets`),
     ]);
     setClassFolder(cf);
     setNotes(noteList);
     setDecks(deckList);
+    setExerciseSets(setList);
   }
 
   useEffect(() => {
@@ -61,6 +65,20 @@ export function ClassFolderPage() {
       navigate(`/decks/${deck.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create deck");
+    }
+  }
+
+  async function handleCreateSet(e: FormEvent) {
+    e.preventDefault();
+    if (!newSetName.trim() || !classId) return;
+    try {
+      const set = await api.post<ExerciseSetSummary>(`/classes/${classId}/exercise-sets`, {
+        name: newSetName.trim(),
+      });
+      setNewSetName("");
+      navigate(`/practice/${set.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to create practice set");
     }
   }
 
@@ -244,6 +262,72 @@ export function ClassFolderPage() {
           >
             <Plus className="h-4 w-4" />
             Add deck
+          </button>
+        </form>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display mb-3 flex items-center gap-2 text-lg font-semibold text-slate-800">
+          <BrainCircuit className="h-4.5 w-4.5 text-slate-400" />
+          Practice quizzes
+        </h2>
+        <div className="mb-3 grid gap-2 sm:grid-cols-2">
+          {exerciseSets.length === 0 && (
+            <p className="col-span-2 text-sm text-slate-500">
+              No practice quizzes yet — create one below, generate one from a note, or ask the
+              AI assistant.
+            </p>
+          )}
+          {exerciseSets.map((set) => {
+            const pct =
+              set.lastAttempt && set.lastAttempt.total > 0
+                ? Math.round((set.lastAttempt.score / set.lastAttempt.total) * 100)
+                : null;
+            return (
+              <Link
+                key={set.id}
+                to={`/practice/${set.id}`}
+                className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+              >
+                <span className="font-medium text-slate-700 transition-colors group-hover:text-violet-700">
+                  {set.name}
+                </span>
+                <span className="flex items-center gap-2">
+                  {pct !== null && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        pct >= 80
+                          ? "bg-emerald-100 text-emerald-700"
+                          : pct >= 50
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-red-100 text-red-600"
+                      }`}
+                    >
+                      {pct}%
+                    </span>
+                  )}
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    {set.exerciseCount} questions
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <form onSubmit={handleCreateSet} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="New practice quiz name"
+            value={newSetName}
+            onChange={(e) => setNewSetName(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          />
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-900"
+          >
+            <Plus className="h-4 w-4" />
+            Add quiz
           </button>
         </form>
       </section>

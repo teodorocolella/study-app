@@ -13,14 +13,16 @@ model User {
   passwordHash  String
   displayName   String
   avatarUrl     String?        @db.Text
+  hasOnboarded  Boolean        @default(false)
   createdAt     DateTime       @default(now())
 
   classFolders  ClassFolder[]
   refreshTokens RefreshToken[]
   cardProgress  CardProgress[]
   reviewLogs    ReviewLog[]
-  sentMessages     Message[]   @relation("SentMessages")
-  receivedMessages Message[]   @relation("ReceivedMessages")
+  sentMessages     Message[]        @relation("SentMessages")
+  receivedMessages Message[]        @relation("ReceivedMessages")
+  exerciseAttempts ExerciseAttempt[]
 }
 
 // Direct messages between students. Shared notes/decks travel as JSON
@@ -61,10 +63,56 @@ model ClassFolder {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  notes     Note[]
-  decks     Deck[]
+  notes        Note[]
+  decks        Deck[]
+  exerciseSets ExerciseSet[]
 
   @@index([userId])
+}
+
+// A practice quiz: a mixed bag of exercises (MCQ, true/false,
+// fill-in-the-blank, AI-graded short answer) belonging to a class.
+model ExerciseSet {
+  id            String      @id @default(cuid())
+  name          String
+  classFolderId String
+  classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  exercises Exercise[]
+  attempts  ExerciseAttempt[]
+
+  @@index([classFolderId])
+}
+
+model Exercise {
+  id          String      @id @default(cuid())
+  setId       String
+  set         ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  type        String // "mcq" | "true_false" | "fill_blank" | "short_answer"
+  prompt      String      @db.Text
+  optionsJson String?     @db.Text // mcq only: JSON array of option strings
+  answer      String      @db.Text // mcq: correct option text; true_false: "true"/"false"; fill_blank: expected text; short_answer: model answer
+  explanation String?     @db.Text
+  position    Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@index([setId])
+}
+
+// One completed run through a set (or a retry of missed questions).
+model ExerciseAttempt {
+  id          String      @id @default(cuid())
+  setId       String
+  set         ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int
+  total       Int
+  resultsJson String      @db.Text // per-question grading detail
+  createdAt   DateTime    @default(now())
+
+  @@index([setId, userId, createdAt])
 }
 
 model Note {

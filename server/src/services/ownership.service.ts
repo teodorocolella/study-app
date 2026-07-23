@@ -31,6 +31,28 @@ export async function getOwnedDeck(userId: string, deckId: string) {
   return deck;
 }
 
+export async function getOwnedExerciseSet(userId: string, setId: string) {
+  const set = await prisma.exerciseSet.findUnique({
+    where: { id: setId },
+    include: { classFolder: true },
+  });
+  if (!set || set.classFolder.userId !== userId) {
+    throw new ApiError(404, "Practice set not found");
+  }
+  return set;
+}
+
+export async function getOwnedExercise(userId: string, exerciseId: string) {
+  const exercise = await prisma.exercise.findUnique({
+    where: { id: exerciseId },
+    include: { set: { include: { classFolder: true } } },
+  });
+  if (!exercise || exercise.set.classFolder.userId !== userId) {
+    throw new ApiError(404, "Exercise not found");
+  }
+  return exercise;
+}
+
 export async function getOwnedFlashcard(userId: string, cardId: string) {
   const card = await prisma.flashcard.findUnique({
     where: { id: cardId },
