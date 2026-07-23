@@ -3,11 +3,11 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { env } from "../env.js";
 
-const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+export const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-const MODEL = "claude-sonnet-5";
+export const MODEL = "claude-sonnet-5";
 
-const NO_MARKDOWN =
+export const NO_MARKDOWN =
   "Write in plain prose only — do not use markdown formatting of any kind (no **bold**, no # headers, no bullet-point dashes or asterisks, no backticks). If you want to separate distinct points, put each on its own line as a plain sentence instead of a markdown list.";
 
 const flashcardsSchema = z.object({
@@ -28,29 +28,6 @@ export async function generateFlashcardsFromNotes(noteText: string, count = 10) 
     throw new Error("Claude did not return parseable flashcard data");
   }
   return response.parsed_output.cards;
-}
-
-export interface ChatTurn {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export async function tutorChatReply(
-  className: string,
-  classContext: string,
-  history: ChatTurn[],
-  userMessage: string,
-) {
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    thinking: { type: "disabled" },
-    system: `You are a patient, encouraging tutor helping a student with their class "${className}". Use the following class notes as your source of truth when relevant:\n\n${classContext || "(no notes yet for this class)"}\n\nExplain concepts clearly and adapt to what the student seems to already know. Keep answers focused — a paragraph or two, not an essay. ${NO_MARKDOWN}`,
-    messages: [...history, { role: "user", content: userMessage }],
-  });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  return textBlock?.type === "text" ? textBlock.text : "";
 }
 
 export async function summarizeNote(noteText: string) {

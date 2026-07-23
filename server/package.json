@@ -25,6 +25,8 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -34,6 +36,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.0",
+    "@types/nodemailer": "^8.0.1",
     "prisma": "^7.8.0",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3"

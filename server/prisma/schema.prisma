@@ -19,6 +19,27 @@ model User {
   refreshTokens RefreshToken[]
   cardProgress  CardProgress[]
   reviewLogs    ReviewLog[]
+  sentMessages     Message[]   @relation("SentMessages")
+  receivedMessages Message[]   @relation("ReceivedMessages")
+}
+
+// Direct messages between students. Shared notes/decks travel as JSON
+// snapshots so the recipient never reads another user's live data.
+model Message {
+  id             String    @id @default(cuid())
+  senderId       String
+  sender         User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  body           String?   @db.Text
+  attachmentType String? // "note" | "deck"
+  attachmentJson String?   @db.Text
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+
+  @@index([recipientId, readAt])
+  @@index([senderId, createdAt])
+  @@index([recipientId, createdAt])
 }
 
 model RefreshToken {

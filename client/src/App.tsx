@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MessagesPage } from "./pages/MessagesPage";
 import { NoteEditorPage } from "./pages/NoteEditorPage";
 import { SignupPage } from "./pages/SignupPage";
 import { StudySessionPage } from "./pages/StudySessionPage";
@@ -42,6 +43,8 @@ function App() {
         />
         <Route path="/decks/:deckId" element={protect(<DeckPage />)} />
         <Route path="/decks/:deckId/study" element={protect(<StudySessionPage />)} />
+        <Route path="/study" element={protect(<StudySessionPage />)} />
+        <Route path="/messages" element={protect(<MessagesPage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

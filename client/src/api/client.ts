@@ -63,6 +63,61 @@ async function request<T>(path: string, options: RequestInit = {}, retry = true)
   return res.json();
 }
 
+/**
+ * POSTs to a server-sent-events endpoint and invokes onEvent for each
+ * `data: {...}` JSON payload as it streams in.
+ */
+async function streamRequest(
+  path: string,
+  body: unknown,
+  onEvent: (event: unknown) => void,
+  retry = true,
+): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+
+  if (res.status === 401 && retry) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return streamRequest(path, body, onEvent, false);
+    }
+  }
+
+  if (!res.ok || !res.body) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, errBody.error ?? "Request failed");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() ?? "";
+    for (const chunk of chunks) {
+      for (const line of chunk.split("\n")) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          onEvent(JSON.parse(line.slice(6)));
+        } catch {
+          // Skip malformed chunks rather than killing the stream.
+        }
+      }
+    }
+  }
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
@@ -70,4 +125,5 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  stream: streamRequest,
 };

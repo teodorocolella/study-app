@@ -17,13 +17,14 @@ import { AppShell } from "../components/layout/AppShell";
 
 type GradeLabel = "again" | "hard" | "good" | "easy";
 
-const GRADE_BUTTONS: { label: GradeLabel; text: string; icon: typeof Frown; className: string }[] = [
-  { label: "again", text: "Again", icon: Frown, className: "bg-red-50 text-red-600 hover:bg-red-100 border-red-100" },
-  { label: "hard", text: "Hard", icon: Meh, className: "bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-100" },
-  { label: "good", text: "Good", icon: Smile, className: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100" },
-  { label: "easy", text: "Easy", icon: Zap, className: "bg-sky-50 text-sky-600 hover:bg-sky-100 border-sky-100" },
+const GRADE_BUTTONS: { label: GradeLabel; text: string; key: string; icon: typeof Frown; className: string }[] = [
+  { label: "again", text: "Again", key: "1", icon: Frown, className: "bg-red-50 text-red-600 hover:bg-red-100 border-red-100" },
+  { label: "hard", text: "Hard", key: "2", icon: Meh, className: "bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-100" },
+  { label: "good", text: "Good", key: "3", icon: Smile, className: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100" },
+  { label: "easy", text: "Easy", key: "4", icon: Zap, className: "bg-sky-50 text-sky-600 hover:bg-sky-100 border-sky-100" },
 ];
 
+// Without a deckId in the route this page reviews every due card across all classes.
 export function StudySessionPage() {
   const { deckId } = useParams<{ deckId: string }>();
   const [queue, setQueue] = useState<Flashcard[]>([]);
@@ -36,9 +37,8 @@ export function StudySessionPage() {
   const [explaining, setExplaining] = useState(false);
 
   useEffect(() => {
-    if (!deckId) return;
     api
-      .get<Flashcard[]>(`/decks/${deckId}/review/due`)
+      .get<Flashcard[]>(deckId ? `/decks/${deckId}/review/due` : "/review/due")
       .then((cards) => {
         setQueue(cards);
         setTotalCount(cards.length);
@@ -49,6 +49,36 @@ export function StudySessionPage() {
 
   const current = queue[0];
   const progress = totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0;
+  const backTo = deckId ? `/decks/${deckId}` : "/dashboard";
+  const backLabel = deckId ? "Back to deck" : "Back to dashboard";
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      if (!queue[0]) return;
+      if (!revealed && (e.key === " " || e.key === "Enter")) {
+        e.preventDefault();
+        setRevealed(true);
+        return;
+      }
+      if (revealed) {
+        const btn = GRADE_BUTTONS.find((b) => b.key === e.key);
+        if (btn) {
+          e.preventDefault();
+          void handleGrade(btn.label);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   async function handleGrade(grade: GradeLabel) {
     if (!current) return;
@@ -93,11 +123,11 @@ export function StudySessionPage() {
   return (
     <AppShell>
       <Link
-        to={`/decks/${deckId}`}
+        to={backTo}
         className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to deck
+        {backLabel}
       </Link>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
@@ -120,10 +150,10 @@ export function StudySessionPage() {
               : "No cards are due for review right now."}
           </p>
           <Link
-            to={`/decks/${deckId}`}
+            to={backTo}
             className="mt-5 inline-block rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
           >
-            Back to deck
+            {backLabel}
           </Link>
         </div>
       ) : (
@@ -187,12 +217,16 @@ export function StudySessionPage() {
                     >
                       <Icon className="h-4 w-4" />
                       {btn.text}
+                      <span className="text-[10px] font-normal opacity-60">{btn.key}</span>
                     </button>
                   );
                 })}
               </div>
             </>
           )}
+          <p className="mt-4 text-center text-xs text-slate-400">
+            Tip: press Space to flip the card, then 1–4 to grade it
+          </p>
         </div>
       )}
     </AppShell>

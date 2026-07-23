@@ -1,4 +1,4 @@
-import { BookOpen, Flame, Layers, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Flame, Layers, Play, Plus, Sparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
@@ -55,6 +55,15 @@ export function DashboardPage() {
               ? `You have ${summary.totalDue} card${summary.totalDue === 1 ? "" : "s"} ready for review.`
               : "You're all caught up — nice work!"}
           </p>
+          {summary && summary.totalDue > 0 && (
+            <Link
+              to="/study"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-transform hover:scale-[1.02]"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+              Review everything
+            </Link>
+          )}
         </div>
         <Sparkles className="hidden h-16 w-16 text-white/20 sm:block" strokeWidth={1.5} />
       </div>

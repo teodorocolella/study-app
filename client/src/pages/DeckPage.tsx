@@ -1,9 +1,10 @@
-import { ArrowLeft, Pencil, Play, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Pencil, Play, Plus, Share2, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, Flashcard } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { ShareModal } from "../components/share/ShareModal";
 
 export function DeckPage() {
   const { deckId } = useParams<{ deckId: string }>();
@@ -16,6 +17,7 @@ export function DeckPage() {
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   async function load() {
     if (!deckId) return;
@@ -94,6 +96,15 @@ export function DeckPage() {
               <Play className="h-3.5 w-3.5 fill-current" />
               Study
             </Link>
+          )}
+          {cards.length > 0 && (
+            <button
+              onClick={() => setSharing(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </button>
           )}
           <button
             onClick={() => void handleDeleteDeck()}
@@ -185,6 +196,14 @@ export function DeckPage() {
           Add card
         </button>
       </form>
+
+      {sharing && deckId && deck && (
+        <ShareModal
+          attachment={{ type: "deck", id: deckId }}
+          label={deck.name}
+          onClose={() => setSharing(false)}
+        />
+      )}
     </AppShell>
   );
 }

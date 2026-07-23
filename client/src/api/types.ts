@@ -32,6 +32,45 @@ export interface Flashcard {
   createdAt: string;
 }
 
+export interface MessagePartner {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
+export type MessageAttachment =
+  | { type: "note"; title: string; contentHtml: string }
+  | { type: "deck"; name: string; cards: { front: string; back: string }[] };
+
+export interface Message {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  body: string | null;
+  attachment: MessageAttachment | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface Conversation {
+  partner: MessagePartner;
+  lastMessage: Message;
+  unreadCount: number;
+}
+
+export interface MessageThread {
+  partner: MessagePartner;
+  messages: Message[];
+}
+
+export interface ImportResult {
+  type: "note" | "deck";
+  noteId?: string;
+  deckId?: string;
+  classId: string;
+}
+
 export interface DashboardSummary {
   classes: { classId: string; name: string; colorTag: string | null; dueCount: number }[];
   totalDue: number;

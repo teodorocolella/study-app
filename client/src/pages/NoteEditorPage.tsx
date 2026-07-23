@@ -2,13 +2,14 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowLeft, Check, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Share2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { EditorToolbar } from "../components/notes/EditorToolbar";
+import { ShareModal } from "../components/share/ShareModal";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -27,6 +28,7 @@ export function NoteEditorPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   function scheduleSave(nextTitle: string, nextContentHtml: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -148,6 +150,13 @@ export function NoteEditorPage() {
         <div className="flex items-center gap-3 whitespace-nowrap">
           <SaveIndicator status={status} />
           <button
+            onClick={() => setSharing(true)}
+            className="flex items-center gap-1 text-sm text-slate-600 hover:text-violet-600"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Share
+          </button>
+          <button
             onClick={() => void handleDelete()}
             className="flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
           >
@@ -208,6 +217,14 @@ export function NoteEditorPage() {
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      {sharing && noteId && (
+        <ShareModal
+          attachment={{ type: "note", id: noteId }}
+          label={title || "Untitled note"}
+          onClose={() => setSharing(false)}
+        />
+      )}
     </AppShell>
   );
 }

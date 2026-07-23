@@ -1,3 +1,12 @@
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function stripHtml(html: string): string {
   return html
     .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, "\n")

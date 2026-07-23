@@ -8,12 +8,20 @@ an AI tutor powered by the Claude API — built for middle school through high s
 - **Class folders** — organize notes and flashcard decks by subject/class
 - **Flashcards with spaced repetition** — an SM-2 scheduling algorithm resurfaces cards you miss
   sooner and pushes cards you know well further out, so study time stays focused
-- **Notes** — a simple notes editor per class folder with a live summary feature, and the ability to generate flashcards based on the notes
-- **AI tutor (Claude API)**:
-  - Generate flashcards automatically from pasted or typed notes
-  - Chat with a tutor scoped to a specific class folder's notes
-  - Summarize long notes into a quick digest
-  - Get an alternate explanation for a flashcard you didn't understand
+- **Rich-text notes** — a notes editor per class folder with autosave
+- **AI assistant (powered by Claude)** — always available in the corner of every page, synced
+  with all of your notes and flashcards:
+  - Ask questions about anything you're studying — it answers from your own notes
+  - Get quizzed one question at a time, with feedback
+  - Ask it to create flashcards or notes for you — it writes them straight into your classes
+  - Streams replies live and knows which page you're on
+  - Plus: generate flashcards from a note, summarize notes, and "explain differently" during study
+- **Study sessions** — per-deck review or one "review everything due" session across all
+  classes, with keyboard shortcuts (Space to flip, 1–4 to grade)
+- **Messaging & sharing** — message classmates by email and share copies of notes and
+  flashcard decks; recipients save them into their own classes
+- **Email reminders** — an optional daily email nudge when cards are due and you haven't
+  studied yet (any SMTP provider)
 - **Dashboard** — see what's due for review today across every class, plus study streaks
 - **Accounts** — full signup/login so each user's classes, notes, and progress are private and
   isolated from everyone else's
@@ -88,6 +96,10 @@ Visit `http://localhost:5173` and sign up for an account.
 | `NODE_ENV`            | `development` or `production`.                                           |
 | `PORT`                | Port the Express server listens on (defaults to `3001` locally).         |
 | `CLIENT_ORIGIN`       | Only needed if client/server are ever split across origins (CORS).       |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Optional. SMTP credentials for daily reminder emails (Gmail app password, Resend, Mailgun…). Leave unset to disable email. |
+| `EMAIL_FROM`          | Optional. From address for reminder emails (defaults to `SMTP_USER`).    |
+| `APP_URL`             | Public URL of the app, used for links inside reminder emails.            |
+| `REMINDER_CRON`       | When the daily reminder job runs (cron syntax, server time). Default `0 16 * * *`. |
 | `VITE_GA_MEASUREMENT_ID` | Optional. Google Analytics 4 Measurement ID (`G-XXXXXXXXXX`). Leave unset to disable analytics. Vite bakes this into the build at build time, so it must be set on Render's Web Service *before* the build runs — not just at runtime. |
 
 ## Deployment (Render)

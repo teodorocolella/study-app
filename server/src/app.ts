@@ -9,6 +9,7 @@ import { requireAuth } from "./middleware/auth.js";
 import { aiRateLimiter } from "./middleware/rateLimiter.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { aiRouter } from "./routes/ai.routes.js";
+import { messagesRouter } from "./routes/messages.routes.js";
 import { classFoldersRouter } from "./routes/classFolders.routes.js";
 import { notesNestedRouter, notesRouter } from "./routes/notes.routes.js";
 import { decksNestedRouter, decksRouter } from "./routes/decks.routes.js";
@@ -50,6 +51,7 @@ export function createApp() {
   app.use("/api/cards", requireAuth, cardsRouter);
   app.use("/api/review", requireAuth, reviewRouter);
   app.use("/api/dashboard", requireAuth, dashboardRouter);
+  app.use("/api/messages", requireAuth, messagesRouter);
   app.use("/api/ai", requireAuth, aiRateLimiter, aiRouter);
 
   if (env.NODE_ENV === "production") {

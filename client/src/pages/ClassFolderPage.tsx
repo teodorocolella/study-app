@@ -4,7 +4,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, Deck, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
-import { TutorChatPanel } from "../components/ai/TutorChatPanel";
 import { CLASS_COLORS, getClassColor } from "../lib/classColors";
 
 export function ClassFolderPage() {
@@ -171,12 +170,6 @@ export function ClassFolderPage() {
         </div>
       )}
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-
-      {classId && (
-        <div className="mb-8">
-          <TutorChatPanel classId={classId} />
-        </div>
-      )}
 
       <section className="mb-10">
         <h2 className="font-display mb-3 flex items-center gap-2 text-lg font-semibold text-slate-800">

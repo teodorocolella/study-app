@@ -4,14 +4,13 @@ import { z } from "zod";
 import { stripHtml } from "../lib/html.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
+import { runAssistant, type AssistantEvent } from "../services/assistant.service.js";
 import {
   explainDifferently,
   generateFlashcardsFromNotes,
   summarizeNote,
-  tutorChatReply,
 } from "../services/claude.service.js";
 import {
-  getOwnedClassFolder,
   getOwnedDeck,
   getOwnedFlashcard,
   getOwnedNote,
@@ -61,37 +60,53 @@ export async function postGenerateFlashcards(req: Request, res: Response) {
   }
 }
 
-const tutorChatSchema = z.object({
-  classId: z.string(),
-  message: z.string().min(1),
+const assistantSchema = z.object({
+  message: z.string().min(1).max(4000),
   history: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() }))
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
+    .max(30)
     .default([]),
+  page: z
+    .object({
+      path: z.string().max(300),
+      classId: z.string().optional(),
+      noteId: z.string().optional(),
+      deckId: z.string().optional(),
+    })
+    .optional(),
 });
 
-export async function postTutorChat(req: Request, res: Response) {
-  const parsed = tutorChatSchema.safeParse(req.body);
+export async function postAssistant(req: Request, res: Response) {
+  const parsed = assistantSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
-  const { classId, message, history } = parsed.data;
-  const classFolder = await getOwnedClassFolder(req.userId, classId);
+  const { message, history, page } = parsed.data;
 
-  const notes = await prisma.note.findMany({
-    where: { classFolderId: classId },
-    select: { title: true, contentHtml: true },
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
   });
-  const classContext = notes
-    .map((n) => `${n.title}\n${stripHtml(n.contentHtml)}`)
-    .join("\n\n")
-    .slice(0, 20000);
+  const send = (event: AssistantEvent) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
 
   try {
-    const reply = await tutorChatReply(classFolder.name, classContext, history, message);
-    res.json({ reply });
+    await runAssistant(req.userId, history, message, page, send);
   } catch (err) {
-    handleClaudeError(err);
+    const friendly =
+      err instanceof Anthropic.APIError
+        ? "The AI assistant is temporarily unavailable. Please try again in a moment."
+        : "Something went wrong. Please try again.";
+    send({ type: "error", message: friendly });
+    if (!(err instanceof Anthropic.APIError)) {
+      console.error("Assistant error:", err);
+    }
+  } finally {
+    res.end();
   }
 }
 
