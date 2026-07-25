@@ -12,6 +12,7 @@ import { aiRouter } from "./routes/ai.routes.js";
 import { messagesRouter } from "./routes/messages.routes.js";
 import { groupsRouter } from "./routes/groups.routes.js";
 import { listShareableResources } from "./controllers/resources.controller.js";
+import { search } from "./controllers/search.controller.js";
 import {
   exerciseSetsNestedRouter,
   exerciseSetsRouter,
@@ -64,6 +65,7 @@ export function createApp() {
   app.use("/api/messages", requireAuth, messagesRouter);
   app.use("/api/groups", requireAuth, groupsRouter);
   app.get("/api/resources", requireAuth, listShareableResources);
+  app.get("/api/search", requireAuth, search);
   app.use("/api/ai", requireAuth, aiRateLimiter, aiRouter);
 
   if (env.NODE_ENV === "production") {

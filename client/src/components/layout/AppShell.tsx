@@ -20,6 +20,7 @@ import { applyTheme, type Theme } from "../../lib/theme";
 import { AssistantWidget } from "../ai/AssistantWidget";
 import { Avatar } from "./Avatar";
 import { ProfileModal } from "./ProfileModal";
+import { SearchBox } from "./SearchBox";
 
 const COLLAPSED_KEY = "sidebar.collapsed";
 
@@ -183,6 +184,10 @@ function Sidebar({
         <button onClick={onCloseMobile} className="text-slate-400 md:hidden" aria-label="Close menu">
           <X className="h-5 w-5" />
         </button>
+      </div>
+
+      <div className={`px-3 pb-1 ${collapsed ? "px-2" : ""}`}>
+        <SearchBox collapsed={collapsed} onNavigate={onCloseMobile} />
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-2">
