@@ -113,6 +113,7 @@ Visit `http://localhost:5173` and sign up for an account.
 | `REMINDER_CRON`       | When the daily reminder job runs (cron syntax, server time). Default `0 16 * * *`. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Continue with Google". Redirect URI: `<APP_URL>/api/auth/oauth/google/callback`. |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Optional. Enables "Continue with Microsoft". Redirect URI: `<APP_URL>/api/auth/oauth/microsoft/callback`. |
+| `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_PUBLIC_URL` / `S3_ENDPOINT` | Optional. S3-compatible object storage (Cloudflare R2, AWS S3) for image uploads. When unset, images are stored inline as data URLs. |
 | `VITE_GA_MEASUREMENT_ID` | Optional. Google Analytics 4 Measurement ID (`G-XXXXXXXXXX`). Leave unset to disable analytics. Vite bakes this into the build at build time, so it must be set on Render's Web Service *before* the build runs — not just at runtime. |
 
 ## Deployment (Render)

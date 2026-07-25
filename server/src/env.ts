@@ -24,6 +24,16 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   MICROSOFT_CLIENT_ID: z.string().optional(),
   MICROSOFT_CLIENT_SECRET: z.string().optional(),
+
+  // Object storage for images (optional, S3-compatible: Cloudflare R2, AWS S3, …).
+  // Enabled only when bucket + keys + public URL are all set; otherwise images
+  // stay inline as data URLs (the default).
+  S3_ENDPOINT: z.string().optional(), // e.g. https://<accountid>.r2.cloudflarestorage.com
+  S3_REGION: z.string().default("auto"),
+  S3_BUCKET: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_PUBLIC_URL: z.string().optional(), // public base URL for stored objects
 });
 
 export const env = envSchema.parse(process.env);

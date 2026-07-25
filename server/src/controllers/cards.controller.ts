@@ -14,11 +14,11 @@ export async function listCards(req: Request, res: Response) {
   res.json(cards);
 }
 
-// Data-URL image (or null to clear). Cap keeps a card row from bloating.
+// An inline data-URL image or a hosted https URL (when object storage is on).
 const imageField = z
   .string()
-  .max(1_500_000, "Image is too large")
-  .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
+  .max(2_000_000, "Image is too large")
+  .regex(/^(data:image\/(png|jpeg|jpg|webp);base64,|https:\/\/)/, "Invalid image")
   .nullable()
   .optional();
 

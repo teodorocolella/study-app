@@ -86,7 +86,7 @@ export function OcclusionCardModal({
     try {
       const card = await api.post<Flashcard>(`/decks/${deckId}/cards`, {
         kind: "image_occlusion",
-        frontImage: image,
+        frontImage: await api.uploadImage(image),
         occlusions: regions,
       });
       onCreated(card);

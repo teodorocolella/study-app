@@ -118,8 +118,35 @@ async function streamRequest(
   }
 }
 
+// Whether object storage is configured, fetched once and cached.
+let uploadsEnabled: boolean | null = null;
+
+/**
+ * Uploads an image data URL to object storage when it's configured, returning
+ * a hosted URL; otherwise returns the data URL unchanged (inline fallback).
+ */
+async function uploadImage(dataUrl: string): Promise<string> {
+  if (!dataUrl.startsWith("data:")) return dataUrl;
+  if (uploadsEnabled === null) {
+    uploadsEnabled = await request<{ enabled: boolean }>("/uploads/status")
+      .then((r) => r.enabled)
+      .catch(() => false);
+  }
+  if (!uploadsEnabled) return dataUrl;
+  try {
+    const { url } = await request<{ url: string }>("/uploads", {
+      method: "POST",
+      body: JSON.stringify({ dataUrl }),
+    });
+    return url;
+  } catch {
+    return dataUrl; // fall back to inline on any upload failure
+  }
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  uploadImage,
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   patch: <T>(path: string, body?: unknown) =>

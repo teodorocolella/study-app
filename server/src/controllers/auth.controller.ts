@@ -244,8 +244,8 @@ const updateProfileSchema = z.object({
   displayName: z.string().min(1).max(80).optional(),
   avatarUrl: z
     .string()
-    .max(1_500_000, "Image is too large")
-    .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
+    .max(2_000_000, "Image is too large")
+    .regex(/^(data:image\/(png|jpeg|jpg|webp);base64,|https:\/\/)/, "Invalid image format")
     .nullable()
     .optional(),
   hasOnboarded: z.literal(true).optional(),

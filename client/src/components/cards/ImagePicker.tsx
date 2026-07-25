@@ -1,5 +1,6 @@
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { api } from "../../api/client";
 import { resizeImageToDataUrl } from "../../lib/imageResize";
 
 /** Compact image picker: pick + downscale an image to a data URL, with a thumbnail + remove. */
@@ -14,15 +15,21 @@ export function ImagePicker({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
+    setBusy(true);
     try {
-      onChange(await resizeImageToDataUrl(file, 800));
+      const dataUrl = await resizeImageToDataUrl(file, 800);
+      // Uploads to object storage when configured; otherwise stays inline.
+      onChange(await api.uploadImage(dataUrl));
     } catch {
       setError("Could not process that image.");
+    } finally {
+      setBusy(false);
     }
     e.target.value = "";
   }
@@ -48,10 +55,11 @@ export function ImagePicker({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors hover:border-violet-300 hover:text-violet-600"
+        disabled={busy}
+        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors hover:border-violet-300 hover:text-violet-600 disabled:opacity-50"
       >
-        <ImagePlus className="h-3.5 w-3.5" />
-        {label}
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+        {busy ? "Uploading…" : label}
       </button>
       <input
         ref={inputRef}
