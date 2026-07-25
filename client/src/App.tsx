@@ -8,6 +8,8 @@ import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
 import { ExerciseSetPage } from "./pages/ExerciseSetPage";
+import { GamePlayPage } from "./pages/GamePlayPage";
+import { GamesPage } from "./pages/GamesPage";
 import { PracticeSessionPage } from "./pages/PracticeSessionPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -56,6 +58,8 @@ function App() {
         <Route path="/groups" element={protect(<MessagesPage />)} />
         <Route path="/messages" element={<Navigate to="/groups" replace />} />
         <Route path="/reference" element={protect(<ReferencePage />)} />
+        <Route path="/games" element={protect(<GamesPage />)} />
+        <Route path="/games/:deckId/:gameId" element={protect(<GamePlayPage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

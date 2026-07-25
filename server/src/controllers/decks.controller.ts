@@ -15,6 +15,28 @@ export async function listDecks(req: Request, res: Response) {
   res.json(decks);
 }
 
+// All of a user's decks across every class — powers the games deck picker.
+export async function listAllDecks(req: Request, res: Response) {
+  const decks = await prisma.deck.findMany({
+    where: { classFolder: { userId: req.userId } },
+    include: {
+      _count: { select: { cards: true } },
+      classFolder: { select: { name: true, colorTag: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(
+    decks.map((d) => ({
+      id: d.id,
+      name: d.name,
+      classFolderId: d.classFolderId,
+      className: d.classFolder.name,
+      colorTag: d.classFolder.colorTag,
+      cardCount: d._count.cards,
+    })),
+  );
+}
+
 const createSchema = z.object({
   name: z.string().min(1).max(120),
 });

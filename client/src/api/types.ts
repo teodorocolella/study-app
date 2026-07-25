@@ -134,6 +134,15 @@ export interface ImportResult {
   classId: string;
 }
 
+export interface DeckSummary {
+  id: string;
+  name: string;
+  classFolderId: string;
+  className: string;
+  colorTag: string | null;
+  cardCount: number;
+}
+
 export interface DashboardSummary {
   classes: {
     classId: string;

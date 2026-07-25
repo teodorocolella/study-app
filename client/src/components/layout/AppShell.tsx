@@ -1,6 +1,7 @@
 import {
   BookOpen,
   ChevronLeft,
+  Gamepad2,
   GraduationCap,
   LayoutDashboard,
   Library,
@@ -60,10 +61,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [location.pathname]);
 
-  // Games is added to the nav when that feature ships.
   const navItems: NavItem[] = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/classes", label: "Classes", icon: BookOpen },
+    { to: "/games", label: "Games", icon: Gamepad2 },
     { to: "/groups", label: "Study Groups", icon: Users, badge: unread },
     { to: "/reference", label: "Reference", icon: Library },
   ];
