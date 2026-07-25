@@ -75,7 +75,7 @@ export function MessagesPage() {
   return (
     <AppShell>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display flex items-center gap-2 text-2xl font-semibold text-slate-800">
+        <h1 className="font-display flex items-center gap-2 text-2xl font-semibold text-slate-800 dark:text-slate-100">
           <MessageSquare className="h-5.5 w-5.5 text-violet-500" />
           Study Groups
         </h1>
@@ -95,7 +95,7 @@ export function MessagesPage() {
       <div className="grid gap-4 md:grid-cols-[280px_1fr]">
         <div className="space-y-2">
           {conversations.length === 0 && !composing && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 text-sm text-slate-500 dark:text-slate-400">
               No conversations yet. Message a classmate by their Study Hub email to share
               notes and flashcard decks.
             </div>
@@ -107,12 +107,12 @@ export function MessagesPage() {
               className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
                 activeUserId === c.partner.id
                   ? "border-violet-300 bg-violet-50"
-                  : "border-slate-200 bg-white hover:border-violet-200"
+                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-200"
               }`}
             >
               <Avatar displayName={c.partner.displayName} avatarUrl={c.partner.avatarUrl} size={36} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-slate-700">
+                <span className="block truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                   {c.partner.displayName}
                 </span>
                 <span className="block truncate text-xs text-slate-400">
@@ -129,7 +129,7 @@ export function MessagesPage() {
           ))}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
           {composing ? (
             <ComposePanel onSent={(partner) => void handleSent(partner)} onCancel={() => setComposing(false)} />
           ) : thread ? (
@@ -182,7 +182,7 @@ function ComposePanel({
   return (
     <form onSubmit={handleSubmit} className="space-y-3 p-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-700">New message</p>
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">New message</p>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
           <X className="h-4 w-4" />
         </button>
@@ -192,14 +192,14 @@ function ComposePanel({
         placeholder="Classmate's Study Hub email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+        className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
       />
       <textarea
         placeholder="Write a message…"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={4}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+        className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
@@ -251,10 +251,10 @@ function ThreadPanel({
 
   return (
     <div className="flex h-[min(560px,70vh)] flex-col">
-      <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-3">
+      <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <Avatar displayName={thread.partner.displayName} avatarUrl={thread.partner.avatarUrl} size={30} />
         <div>
-          <p className="text-sm font-semibold text-slate-700">{thread.partner.displayName}</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{thread.partner.displayName}</p>
           <p className="text-xs text-slate-400">{thread.partner.email}</p>
         </div>
       </div>
@@ -266,13 +266,13 @@ function ThreadPanel({
       </div>
 
       {error && <p className="px-4 text-sm text-red-600">{error}</p>}
-      <form onSubmit={handleSend} className="flex gap-2 border-t border-slate-200 p-3">
+      <form onSubmit={handleSend} className="flex gap-2 border-t border-slate-200 dark:border-slate-700 p-3">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={`Message ${thread.partner.displayName}…`}
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />
         <button
           type="submit"
@@ -295,7 +295,7 @@ function MessageBubble({ message, mine }: { message: Message; mine: boolean }) {
           className={`inline-block max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-sm ${
             mine
               ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white"
-              : "bg-slate-100 text-slate-700"
+              : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
           }`}
         >
           {message.body}
@@ -360,7 +360,7 @@ function AttachmentCard({
   return (
     <div
       className={`mt-1.5 inline-block max-w-[85%] rounded-xl border p-3 text-left ${
-        mine ? "border-violet-200 bg-violet-50" : "border-slate-200 bg-white"
+        mine ? "border-violet-200 bg-violet-50" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
       }`}
     >
       <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ function AttachmentCard({
           <Icon className="h-4 w-4" />
         </span>
         <span>
-          <span className="block text-sm font-medium text-slate-700">{title}</span>
+          <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">{title}</span>
           <span className="block text-xs text-slate-400">{subtitle}</span>
         </span>
       </div>
@@ -383,13 +383,13 @@ function AttachmentCard({
               Save to my classes
             </button>
           ) : classes.length === 0 ? (
-            <p className="text-xs text-slate-500">Create a class first, then save this here.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Create a class first, then save this here.</p>
           ) : (
             <div className="flex items-center gap-2">
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+                className="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 text-xs"
               >
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>

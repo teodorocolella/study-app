@@ -39,7 +39,7 @@ export function CardContent({ card, side }: { card: Flashcard; side: "front" | "
       {image && <img src={image} alt="" className="max-h-[36vh] w-auto max-w-full rounded-xl" />}
       {text && (
         <MathText
-          className={side === "front" ? "font-display text-xl font-medium text-slate-800" : "text-lg text-slate-600"}
+          className={side === "front" ? "font-display text-xl font-medium text-slate-800 dark:text-slate-100" : "text-lg text-slate-600 dark:text-slate-300"}
           text={text}
         />
       )}

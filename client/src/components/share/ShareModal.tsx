@@ -50,15 +50,15 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <p className="font-display font-semibold text-slate-800">
+            <p className="font-display font-semibold text-slate-800 dark:text-slate-100">
               Share {attachment.type === "deck" ? "deck" : "note"}
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Send "{label}" to a classmate. They'll get their own copy to keep.
             </p>
           </div>
@@ -80,14 +80,14 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
               placeholder="Classmate's Study Hub email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
             />
             <textarea
               placeholder="Add a message (optional)"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
             />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button

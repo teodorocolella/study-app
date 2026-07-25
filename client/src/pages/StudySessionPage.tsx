@@ -132,7 +132,7 @@ export function StudySessionPage() {
     <AppShell>
       <Link
         to={backTo}
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {backLabel}
@@ -141,7 +141,7 @@ export function StudySessionPage() {
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {!current ? (
-        <div className="animate-fade-in mt-8 rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+        <div className="animate-fade-in mt-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100">
             {reviewedCount > 0 ? (
               <PartyPopper className="h-7 w-7 text-violet-600" />
@@ -149,10 +149,10 @@ export function StudySessionPage() {
               <CheckCircle2 className="h-7 w-7 text-violet-600" />
             )}
           </div>
-          <p className="font-display text-xl font-semibold text-slate-800">
+          <p className="font-display text-xl font-semibold text-slate-800 dark:text-slate-100">
             {reviewedCount > 0 ? "Session complete!" : "All caught up!"}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {reviewedCount > 0
               ? `You reviewed ${reviewedCount} card${reviewedCount === 1 ? "" : "s"}.`
               : "No cards are due for review right now."}
@@ -196,7 +196,7 @@ export function StudySessionPage() {
 
           <div
             onClick={() => !revealed && setRevealed(true)}
-            className="animate-flip-in flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-md transition-shadow hover:shadow-lg"
+            className="animate-flip-in flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-10 text-center shadow-md transition-shadow hover:shadow-lg"
           >
             {current.kind === "image_occlusion" && revealed ? (
               // Occlusion cards swap the numbered front for the labeled back on reveal.
@@ -206,7 +206,7 @@ export function StudySessionPage() {
             )}
             {revealed && current.kind !== "image_occlusion" && (
               <>
-                <hr className="my-4 w-24 border-slate-200" />
+                <hr className="my-4 w-24 border-slate-200 dark:border-slate-700" />
                 <CardContent card={current} side="back" />
               </>
             )}
@@ -231,7 +231,7 @@ export function StudySessionPage() {
                 </button>
               </div>
               {explanation && (
-                <div className="animate-flip-in mt-3 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 text-sm text-slate-700">
+                <div className="animate-flip-in mt-3 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 text-sm text-slate-700 dark:text-slate-200">
                   {explanation}
                 </div>
               )}

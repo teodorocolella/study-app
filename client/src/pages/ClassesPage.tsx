@@ -43,11 +43,11 @@ export function ClassesPage() {
 
   return (
     <AppShell>
-      <h1 className="font-display mb-6 text-2xl font-semibold text-slate-800">Your classes</h1>
+      <h1 className="font-display mb-6 text-2xl font-semibold text-slate-800 dark:text-slate-100">Your classes</h1>
 
       <div className="mb-8 grid gap-3 sm:grid-cols-2">
         {summary?.classes.length === 0 && (
-          <p className="col-span-2 text-sm text-slate-500">
+          <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">
             No classes yet — create your first one below.
           </p>
         )}
@@ -57,12 +57,12 @@ export function ClassesPage() {
             <Link
               key={c.classId}
               to={`/classes/${c.classId}`}
-              className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${color.gradient}`} />
               <div className="pl-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-700 transition-colors group-hover:text-slate-900">
+                  <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
                   </span>
                   {c.dueCount > 0 && (
@@ -91,8 +91,8 @@ export function ClassesPage() {
         })}
       </div>
 
-      <form onSubmit={handleCreate} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="mb-3 text-sm font-medium text-slate-600">Add a new class</p>
+      <form onSubmit={handleCreate} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
+        <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Add a new class</p>
         <div className="mb-3 flex gap-2">
           {CLASS_COLORS.map((c) => (
             <button
@@ -112,7 +112,7 @@ export function ClassesPage() {
             placeholder="Class name (e.g. Algebra II)"
             value={newClassName}
             onChange={(e) => setNewClassName(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <button
             type="submit"

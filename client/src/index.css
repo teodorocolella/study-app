@@ -3,6 +3,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Class-based dark mode: `dark:` utilities apply when <html> has .dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
@@ -14,6 +17,24 @@ body {
   background-color: #f6f5fb;
   color: #1e1b2e;
   -webkit-font-smoothing: antialiased;
+}
+
+.dark body {
+  background-color: #0f0e17;
+  color: #e2e8f0;
+}
+
+/* Rich-text notes read well in both themes */
+.dark .prose {
+  color: #cbd5e1;
+}
+.dark .prose :where(h1, h2, h3, h4, strong) {
+  color: #f1f5f9;
+}
+
+/* Native form controls follow the theme (date pickers, dropdown arrows) */
+.dark {
+  color-scheme: dark;
 }
 
 h1,

@@ -96,24 +96,24 @@ export function BlocksGame({ deckId, cards }: { deckId: string; cards: Flashcard
   const best = getBest("blocks", deckId);
 
   if (pool.length < 3) {
-    return <p className="text-sm text-slate-500">Add at least 3 text cards to this deck to play this game.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Add at least 3 text cards to this deck to play this game.</p>;
   }
 
   if (!playing) {
     return (
-      <div className="animate-flip-in rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-md">
+      <div className="animate-flip-in rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-10 text-center shadow-md">
         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-xl">
           🧱
         </div>
         {score > 0 || lives === 0 ? (
           <>
-            <p className="font-display text-3xl font-semibold text-slate-800">{score}</p>
-            <p className="mt-1 text-sm text-slate-500">{record ? "New high score! 🎉" : "Game over!"}</p>
+            <p className="font-display text-3xl font-semibold text-slate-800 dark:text-slate-100">{score}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{record ? "New high score! 🎉" : "Game over!"}</p>
           </>
         ) : (
           <>
-            <p className="font-display text-xl font-semibold text-slate-800">Answer Blocks</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="font-display text-xl font-semibold text-slate-800 dark:text-slate-100">Answer Blocks</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Tap the block with the right answer before it hits the floor. It speeds up — don't lose all 3 lives!
             </p>
           </>
@@ -140,7 +140,7 @@ export function BlocksGame({ deckId, cards }: { deckId: string; cards: Flashcard
             />
           ))}
         </span>
-        <span className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+        <span className="flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
           <Trophy className="h-4 w-4 text-amber-500" />
           {score}
         </span>
@@ -151,7 +151,7 @@ export function BlocksGame({ deckId, cards }: { deckId: string; cards: Flashcard
         <p className="font-display font-semibold text-white">{wave?.prompt}</p>
       </div>
 
-      <div className="relative h-72 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+      <div className="relative h-72 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
         <div
           className="absolute inset-x-0 flex gap-2 px-2"
           style={{ top: `${dropY}%`, transition: `top ${TICK_MS}ms linear` }}
@@ -160,7 +160,7 @@ export function BlocksGame({ deckId, cards }: { deckId: string; cards: Flashcard
             <button
               key={opt}
               onClick={() => pick(opt)}
-              className="flex-1 rounded-lg border border-violet-300 bg-white px-2 py-3 text-center text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-violet-500 hover:bg-violet-50"
+              className="flex-1 rounded-lg border border-violet-300 bg-white dark:bg-slate-800 px-2 py-3 text-center text-xs font-medium text-slate-700 dark:text-slate-200 shadow-sm transition-colors hover:border-violet-500 hover:bg-violet-50"
             >
               {opt}
             </button>

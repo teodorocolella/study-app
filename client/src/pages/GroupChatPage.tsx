@@ -91,7 +91,7 @@ export function GroupChatPage() {
     <AppShell>
       <Link
         to="/groups"
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         All groups
@@ -99,7 +99,7 @@ export function GroupChatPage() {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-slate-800">{group?.name}</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-800 dark:text-slate-100">{group?.name}</h1>
           {group && (
             <div className="mt-1 flex items-center gap-1.5">
               {group.members.slice(0, 6).map((m) => (
@@ -116,7 +116,7 @@ export function GroupChatPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAddingMember(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50"
           >
             <UserPlus className="h-3.5 w-3.5" />
             Add member
@@ -133,7 +133,7 @@ export function GroupChatPage() {
 
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      <div className="flex h-[min(600px,68vh)] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex h-[min(600px,68vh)] flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
         <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
           {messages.length === 0 && (
             <p className="py-8 text-center text-sm text-slate-400">
@@ -145,12 +145,12 @@ export function GroupChatPage() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-slate-200 p-3">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-slate-200 dark:border-slate-700 p-3">
           <button
             type="button"
             onClick={() => setPicking(true)}
             title="Share a note, deck, or quiz"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-violet-600"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 hover:text-violet-600"
           >
             <Paperclip className="h-4.5 w-4.5" />
           </button>
@@ -158,7 +158,7 @@ export function GroupChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Message the group…"
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <button
             type="submit"
@@ -200,7 +200,7 @@ function GroupBubble({ message, mine, groupId }: { message: GroupMessageDto; min
       {message.body && (
         <span
           className={`inline-block max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-sm ${
-            mine ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+            mine ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
           }`}
         >
           {message.body}
@@ -262,7 +262,7 @@ function GroupAttachmentCard({
   return (
     <div
       className={`mt-1.5 inline-block max-w-[85%] rounded-xl border p-3 text-left ${
-        mine ? "border-violet-200 bg-violet-50" : "border-slate-200 bg-white"
+        mine ? "border-violet-200 bg-violet-50" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
       }`}
     >
       <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ function GroupAttachmentCard({
           <Icon className="h-4 w-4" />
         </span>
         <span>
-          <span className="block text-sm font-medium text-slate-700">{meta.title}</span>
+          <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">{meta.title}</span>
           <span className="block text-xs text-slate-400">{meta.sub}</span>
         </span>
       </div>
@@ -288,13 +288,13 @@ function GroupAttachmentCard({
           Save to my classes
         </button>
       ) : classes.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-500">Create a class first, then save this.</p>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Create a class first, then save this.</p>
       ) : (
         <div className="mt-2.5 flex items-center gap-2">
           <select
             value={selectedClassId}
             onChange={(e) => setSelectedClassId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs"
+            className="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 text-xs"
           >
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
@@ -349,11 +349,11 @@ function AddMemberModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <form
         onSubmit={handleAdd}
-        className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-display font-semibold text-slate-800">Add a member</p>
+          <p className="font-display font-semibold text-slate-800 dark:text-slate-100">Add a member</p>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="h-4.5 w-4.5" />
           </button>
@@ -364,7 +364,7 @@ function AddMemberModal({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Classmate's Study Hub email"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <button

@@ -69,7 +69,7 @@ export function DashboardPage() {
           {summary && summary.totalDue > 0 && (
             <Link
               to="/study"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-transform hover:scale-[1.02]"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-transform hover:scale-[1.02]"
             >
               <Play className="h-3.5 w-3.5 fill-current" />
               Review everything
@@ -87,16 +87,16 @@ export function DashboardPage() {
       </div>
 
       <div className="mb-10 grid gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <p className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
             <BarChart3 className="h-4 w-4 text-slate-400" />
             Cards reviewed, last 7 days
           </p>
           <ActivityChart data={summary?.dailyActivity ?? []} />
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-slate-700">Quick actions</p>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Quick actions</p>
           <div className="space-y-2">
             <QuickAction
               icon={Sparkles}
@@ -119,10 +119,10 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <h2 className="font-display mb-4 text-lg font-semibold text-slate-800">Your classes</h2>
+      <h2 className="font-display mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Your classes</h2>
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         {summary?.classes.length === 0 && (
-          <p className="col-span-2 text-sm text-slate-500">No classes yet — create one below to get started.</p>
+          <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">No classes yet — create one below to get started.</p>
         )}
         {summary?.classes.map((c) => {
           const color = getClassColor(c.colorTag);
@@ -130,12 +130,12 @@ export function DashboardPage() {
             <Link
               key={c.classId}
               to={`/classes/${c.classId}`}
-              className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${color.gradient}`} />
               <div className="pl-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-700 transition-colors group-hover:text-slate-900">
+                  <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
                   </span>
                   {c.dueCount > 0 && (
@@ -166,9 +166,9 @@ export function DashboardPage() {
 
       <form
         onSubmit={handleCreateClass}
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm"
       >
-        <p className="mb-3 text-sm font-medium text-slate-600">Add a new class</p>
+        <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Add a new class</p>
         <div className="mb-3 flex gap-2">
           {CLASS_COLORS.map((c) => (
             <button
@@ -188,7 +188,7 @@ export function DashboardPage() {
             placeholder="Class name (e.g. Algebra II)"
             value={newClassName}
             onChange={(e) => setNewClassName(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <button
             type="submit"
@@ -220,7 +220,7 @@ function ActivityChart({ data }: { data: { date: string; count: number }[] }) {
         return (
           <div key={day.date} className="group relative flex h-full flex-1 flex-col justify-end">
             {day.count > 0 && i === maxIndex && (
-              <span className="mb-1 text-center text-xs font-semibold text-slate-600">{day.count}</span>
+              <span className="mb-1 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">{day.count}</span>
             )}
             <div className="relative flex w-full justify-center">
               <span className="pointer-events-none absolute -top-7 hidden rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white group-hover:block">
@@ -253,7 +253,7 @@ function QuickAction({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:border-violet-200 hover:bg-violet-50/50 hover:text-violet-700"
+      className="flex w-full items-center gap-2.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-left text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:border-violet-200 hover:bg-violet-50/50 hover:text-violet-700"
     >
       <Icon className="h-4 w-4 text-violet-500" />
       {label}
@@ -279,12 +279,12 @@ function StatCard({
     emerald: "bg-emerald-100 text-emerald-600",
   };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
       <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${accents[accent]}`}>
         <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
       </div>
       <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="font-display mt-1 text-2xl font-semibold text-slate-800">{value}</p>
+      <p className="font-display mt-1 text-2xl font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }

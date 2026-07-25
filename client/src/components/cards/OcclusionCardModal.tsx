@@ -100,16 +100,16 @@ export function OcclusionCardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <p className="font-display flex items-center gap-1.5 font-semibold text-slate-800">
+            <p className="font-display flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
               <ScanEye className="h-4.5 w-4.5 text-violet-500" />
               Image-occlusion card
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Upload a labeled image, then drag boxes over the parts you want to recall.
             </p>
           </div>
@@ -119,7 +119,7 @@ export function OcclusionCardModal({
         </div>
 
         {!image ? (
-          <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-sm text-slate-500 hover:border-violet-300 hover:text-violet-600">
+          <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400 hover:border-violet-300 hover:text-violet-600">
             <ScanEye className="h-6 w-6" />
             Choose an image (diagram, map, anatomy…)
             <input
@@ -136,7 +136,7 @@ export function OcclusionCardModal({
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              className="relative select-none touch-none overflow-hidden rounded-xl border border-slate-200"
+              className="relative select-none touch-none overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
               style={{ cursor: "crosshair" }}
             >
               <img src={image} alt="" className="pointer-events-none w-full" draggable={false} />
@@ -170,7 +170,7 @@ export function OcclusionCardModal({
                         setRegions((prev) => prev.map((p, j) => (j === i ? { ...p, label: e.target.value } : p)))
                       }
                       placeholder={`What's hidden in box ${i + 1}?`}
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                      className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
                     />
                     <button
                       onClick={() => setRegions((prev) => prev.filter((_, j) => j !== i))}
@@ -187,7 +187,7 @@ export function OcclusionCardModal({
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
             <div className="mt-4 flex items-center justify-between">
-              <button onClick={() => setImage(null)} className="text-sm text-slate-500 hover:text-slate-700">
+              <button onClick={() => setImage(null)} className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700">
                 Choose a different image
               </button>
               <button

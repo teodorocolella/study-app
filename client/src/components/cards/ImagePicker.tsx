@@ -30,7 +30,7 @@ export function ImagePicker({
   if (value) {
     return (
       <div className="relative inline-block">
-        <img src={value} alt="" className="h-16 rounded-lg border border-slate-200 object-cover" />
+        <img src={value} alt="" className="h-16 rounded-lg border border-slate-200 dark:border-slate-700 object-cover" />
         <button
           type="button"
           onClick={() => onChange(null)}
@@ -48,7 +48,7 @@ export function ImagePicker({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-violet-300 hover:text-violet-600"
+        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors hover:border-violet-300 hover:text-violet-600"
       >
         <ImagePlus className="h-3.5 w-3.5" />
         {label}

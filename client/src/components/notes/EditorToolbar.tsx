@@ -36,7 +36,7 @@ function ToolbarButton({
       aria-label={label}
       title={label}
       className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-30 ${
-        active ? "bg-violet-100 text-violet-700" : "text-slate-600 hover:bg-slate-100"
+        active ? "bg-violet-100 text-violet-700" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
       }`}
     >
       {children}
@@ -54,7 +54,7 @@ export function EditorToolbar({
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-slate-300 bg-slate-50 p-2">
+    <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2">
       <ToolbarButton
         label="Bold"
         active={editor.isActive("bold")}

@@ -171,7 +171,7 @@ export function NoteEditorPage() {
     <AppShell>
       <Link
         to={`/classes/${classId}`}
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to class
@@ -182,13 +182,13 @@ export function NoteEditorPage() {
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          className="font-display w-full text-2xl font-semibold text-slate-800 focus:outline-none"
+          className="font-display w-full text-2xl font-semibold text-slate-800 dark:text-slate-100 focus:outline-none"
         />
         <div className="flex items-center gap-3 whitespace-nowrap">
           <SaveIndicator status={status} />
           <button
             onClick={() => setSharing(true)}
-            className="flex items-center gap-1 text-sm text-slate-600 hover:text-violet-600"
+            className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600"
           >
             <Share2 className="h-3.5 w-3.5" />
             Share
@@ -204,11 +204,11 @@ export function NoteEditorPage() {
       </div>
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
         <button
           onClick={() => void handleSummarize()}
           disabled={summarizing}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 disabled:opacity-50"
         >
           {summarizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-violet-500" />}
           {summarizing ? "Summarizing…" : "Summarize"}
@@ -217,7 +217,7 @@ export function NoteEditorPage() {
         <select
           value={selectedDeckId}
           onChange={(e) => setSelectedDeckId(e.target.value)}
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          className="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 text-sm"
         >
           {decks.length === 0 && <option value="">No decks yet</option>}
           {decks.map((d) => (
@@ -235,10 +235,10 @@ export function NoteEditorPage() {
           {generating ? "Generating…" : "Generate flashcards from this note"}
         </button>
 
-        {aiMessage && <span className="text-sm text-slate-500">{aiMessage}</span>}
+        {aiMessage && <span className="text-sm text-slate-500 dark:text-slate-400">{aiMessage}</span>}
 
         <div className="flex w-full flex-wrap items-center gap-3 border-t border-slate-100 pt-3">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
             <BrainCircuit className="h-3.5 w-3.5 text-violet-500" />
             Practice quiz:
           </span>
@@ -250,7 +250,7 @@ export function NoteEditorPage() {
               ["short_answer", "Short answer"],
             ] as [ExerciseType, string][]
           ).map(([type, label]) => (
-            <label key={type} className="flex items-center gap-1.5 text-sm text-slate-600">
+            <label key={type} className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
               <input
                 type="checkbox"
                 checked={quizTypes.includes(type)}
@@ -263,7 +263,7 @@ export function NoteEditorPage() {
           <select
             value={quizCount}
             onChange={(e) => setQuizCount(Number(e.target.value))}
-            className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            className="rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1.5 text-sm"
           >
             <option value={5}>5 questions</option>
             <option value={10}>10 questions</option>
@@ -287,13 +287,13 @@ export function NoteEditorPage() {
             <Sparkles className="h-3.5 w-3.5" />
             AI summary
           </p>
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{aiSummary}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{aiSummary}</p>
         </div>
       )}
 
       <div>
         <EditorToolbar editor={editor} onDraw={() => setDrawingOpen(true)} />
-        <div className="rounded-b-xl border border-slate-300 bg-white shadow-sm">
+        <div className="rounded-b-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
           <EditorContent editor={editor} />
         </div>
       </div>

@@ -27,11 +27,11 @@ export function ResourcePicker({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <div
-        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-display font-semibold text-slate-800">Share to the group</p>
+          <p className="font-display font-semibold text-slate-800 dark:text-slate-100">Share to the group</p>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="h-4.5 w-4.5" />
           </button>
@@ -43,7 +43,7 @@ export function ResourcePicker({
             Loading…
           </div>
         ) : resources.notes.length + resources.decks.length + resources.quizzes.length === 0 ? (
-          <p className="py-6 text-sm text-slate-500">
+          <p className="py-6 text-sm text-slate-500 dark:text-slate-400">
             Nothing to share yet — create a note, deck, or quiz first.
           </p>
         ) : (
@@ -111,10 +111,10 @@ function Row({ label, sub, onClick }: { label: string; sub: string; onClick: () 
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-left transition-colors hover:border-violet-300 hover:bg-violet-50/40"
+      className="flex w-full items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-left transition-colors hover:border-violet-300 hover:bg-violet-50/40"
     >
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-slate-700">{label}</span>
+        <span className="block truncate text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
         <span className="block truncate text-xs text-slate-400">{sub}</span>
       </span>
     </button>

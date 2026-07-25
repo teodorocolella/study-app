@@ -42,13 +42,13 @@ export function GamePlayPage() {
     <AppShell>
       <Link
         to="/games"
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to games
       </Link>
 
-      <h1 className="font-display mt-2 mb-6 text-2xl font-semibold text-slate-800">
+      <h1 className="font-display mt-2 mb-6 text-2xl font-semibold text-slate-800 dark:text-slate-100">
         {validGame ? GAME_NAMES[gameId as GameId] : "Game"}
         {deck && <span className="text-slate-400"> · {deck.name}</span>}
       </h1>
@@ -61,7 +61,7 @@ export function GamePlayPage() {
           Loading…
         </div>
       ) : !validGame || !deckId ? (
-        <p className="text-sm text-slate-500">Unknown game.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Unknown game.</p>
       ) : gameId === "match" ? (
         <MatchGame deckId={deckId} cards={cards} />
       ) : gameId === "speed" ? (

@@ -99,7 +99,7 @@ export function DeckPage() {
       {deck && (
         <Link
           to={`/classes/${deck.classFolderId}`}
-          className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+          className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to class
@@ -107,7 +107,7 @@ export function DeckPage() {
       )}
 
       <div className="mt-2 mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-slate-800">{deck?.name}</h1>
+        <h1 className="font-display text-2xl font-semibold text-slate-800 dark:text-slate-100">{deck?.name}</h1>
         <div className="flex items-center gap-3">
           {cards.length > 0 && (
             <Link
@@ -121,7 +121,7 @@ export function DeckPage() {
           {cards.length > 0 && (
             <button
               onClick={() => setSharing(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50"
             >
               <Share2 className="h-3.5 w-3.5" />
               Share
@@ -139,22 +139,22 @@ export function DeckPage() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       <div className="mb-6 space-y-2.5">
-        {cards.length === 0 && <p className="text-sm text-slate-500">No cards yet — add one below.</p>}
+        {cards.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No cards yet — add one below.</p>}
         {cards.map((card) =>
           editingId === card.id ? (
             <div
               key={card.id}
-              className="animate-flip-in space-y-2 rounded-xl border border-violet-300 bg-white p-4 shadow-sm"
+              className="animate-flip-in space-y-2 rounded-xl border border-violet-300 bg-white dark:bg-slate-800 p-4 shadow-sm"
             >
               <input
                 value={editFront}
                 onChange={(e) => setEditFront(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
               />
               <input
                 value={editBack}
                 onChange={(e) => setEditBack(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
               />
               <div className="flex gap-2">
                 <button
@@ -165,7 +165,7 @@ export function DeckPage() {
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600"
+                  className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300"
                 >
                   Cancel
                 </button>
@@ -174,7 +174,7 @@ export function DeckPage() {
           ) : (
             <div
               key={card.id}
-              className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+              className="group flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex items-center gap-3">
                 {card.kind === "image_occlusion" ? (
@@ -183,11 +183,11 @@ export function DeckPage() {
                       <img src={card.frontImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
                     )}
                     <div>
-                      <p className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <p className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200">
                         <ScanEye className="h-4 w-4 text-violet-500" />
                         Image occlusion
                       </p>
-                      <p className="text-sm text-slate-500">{card.back}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{card.back}</p>
                     </div>
                   </div>
                 ) : (
@@ -196,8 +196,8 @@ export function DeckPage() {
                       <img src={card.frontImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
                     )}
                     <div>
-                      <p className="font-medium text-slate-700">{card.front}</p>
-                      <p className="text-sm text-slate-500">{card.back}</p>
+                      <p className="font-medium text-slate-700 dark:text-slate-200">{card.front}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{card.back}</p>
                     </div>
                     {card.backImage && (
                       <img src={card.backImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
@@ -220,9 +220,9 @@ export function DeckPage() {
         )}
       </div>
 
-      <form onSubmit={handleAddCard} className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <form onSubmit={handleAddCard} className="space-y-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-slate-600">Add a card</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Add a card</p>
           <button
             type="button"
             onClick={() => setOcclusionOpen(true)}
@@ -238,7 +238,7 @@ export function DeckPage() {
             placeholder="Front"
             value={front}
             onChange={(e) => setFront(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <ImagePicker value={frontImage} onChange={setFrontImage} label="Front photo" />
         </div>
@@ -248,7 +248,7 @@ export function DeckPage() {
             placeholder="Back"
             value={back}
             onChange={(e) => setBack(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <ImagePicker value={backImage} onChange={setBackImage} label="Back photo" />
         </div>

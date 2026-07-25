@@ -41,9 +41,9 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="animate-flip-in w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <div className="animate-flip-in w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-slate-800">Edit profile</h2>
+          <h2 className="font-display text-lg font-semibold text-slate-800 dark:text-slate-100">Edit profile</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="h-4.5 w-4.5" />
           </button>
@@ -75,19 +75,19 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <label className="mb-1.5 block text-sm font-medium text-slate-600">Display name</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Display name</label>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="mb-4 w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />
 
-        <label className="mb-1.5 block text-sm font-medium text-slate-600">Grade level</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Grade level</label>
         <select
           value={gradeLevel ?? ""}
           onChange={(e) => setGradeLevel(e.target.value ? Number(e.target.value) : null)}
-          className="mb-1.5 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="mb-1.5 w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         >
           <option value="">Prefer not to say</option>
           {GRADE_OPTIONS.map((g) => (
@@ -113,7 +113,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50"
           >
             Cancel
           </button>

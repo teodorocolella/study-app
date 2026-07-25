@@ -96,7 +96,7 @@ export function PracticeSessionPage() {
     <AppShell>
       <Link
         to={`/practice/${setId}`}
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-violet-600"
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to {set?.name ?? "practice set"}
@@ -104,7 +104,7 @@ export function PracticeSessionPage() {
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {phase === "answering" && exercises.length === 0 && (
-        <p className="mt-8 text-sm text-slate-500">This practice set has no questions yet.</p>
+        <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">This practice set has no questions yet.</p>
       )}
 
       {phase === "answering" && current && (
@@ -121,12 +121,12 @@ export function PracticeSessionPage() {
             </span>
           </div>
 
-          <div className="animate-flip-in rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+          <div className="animate-flip-in rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-md">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-violet-500">
               {EXERCISE_TYPE_LABELS[current.type]}
             </p>
             <MathText
-              className="font-display mb-6 block text-xl font-medium text-slate-800"
+              className="font-display mb-6 block text-xl font-medium text-slate-800 dark:text-slate-100"
               text={current.prompt}
             />
             <AnswerInput
@@ -140,7 +140,7 @@ export function PracticeSessionPage() {
             <button
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
               disabled={index === 0}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Previous
@@ -167,7 +167,7 @@ export function PracticeSessionPage() {
       )}
 
       {phase === "grading" && (
-        <div className="mt-16 flex flex-col items-center gap-3 text-slate-500">
+        <div className="mt-16 flex flex-col items-center gap-3 text-slate-500 dark:text-slate-400">
           <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
           <p className="text-sm font-medium">
             {hasShortAnswers ? "Claude is grading your written answers…" : "Grading…"}
@@ -177,7 +177,7 @@ export function PracticeSessionPage() {
 
       {phase === "results" && result && (
         <div className="mt-6">
-          <div className="animate-flip-in mb-6 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-md">
+          <div className="animate-flip-in mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center shadow-md">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100">
               {result.score === result.total ? (
                 <PartyPopper className="h-7 w-7 text-violet-600" />
@@ -185,10 +185,10 @@ export function PracticeSessionPage() {
                 <Sparkles className="h-7 w-7 text-violet-600" />
               )}
             </div>
-            <p className="font-display text-3xl font-semibold text-slate-800">
+            <p className="font-display text-3xl font-semibold text-slate-800 dark:text-slate-100">
               {result.score} / {result.total}
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {result.score === result.total
                 ? "Perfect score — you've got this!"
                 : `${Math.round((result.score / result.total) * 100)}% — review the ones you missed below.`}
@@ -205,7 +205,7 @@ export function PracticeSessionPage() {
               )}
               <Link
                 to={`/practice/${setId}`}
-                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 dark:border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50"
               >
                 Done
               </Link>
@@ -216,7 +216,7 @@ export function PracticeSessionPage() {
             {result.results.map((row, i) => (
               <div
                 key={row.exerciseId}
-                className={`rounded-xl border bg-white p-4 shadow-sm ${
+                className={`rounded-xl border bg-white dark:bg-slate-800 p-4 shadow-sm ${
                   row.correct ? "border-emerald-200" : "border-red-200"
                 }`}
               >
@@ -229,18 +229,18 @@ export function PracticeSessionPage() {
                     {row.correct ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-700">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
                       {i + 1}. {row.prompt}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                       Your answer:{" "}
                       <span className={row.correct ? "text-emerald-600" : "text-red-500"}>
                         {row.userAnswer || "(blank)"}
                       </span>
                     </p>
                     {!row.correct && row.type !== "short_answer" && (
-                      <p className="text-sm text-slate-500">
-                        Correct answer: <span className="font-medium text-slate-700">{row.correctAnswer}</span>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Correct answer: <span className="font-medium text-slate-700 dark:text-slate-200">{row.correctAnswer}</span>
                       </p>
                     )}
                     {row.feedback && (
@@ -282,7 +282,7 @@ function AnswerInput({
             className={`block w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
               value === option
                 ? "border-violet-500 bg-violet-50 text-violet-700"
-                : "border-slate-200 text-slate-600 hover:border-violet-300 hover:bg-violet-50/40"
+                : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-violet-300 hover:bg-violet-50/40"
             }`}
           >
             {option}
@@ -302,7 +302,7 @@ function AnswerInput({
             className={`rounded-xl border px-4 py-3 text-sm font-semibold capitalize transition-colors ${
               value === option
                 ? "border-violet-500 bg-violet-50 text-violet-700"
-                : "border-slate-200 text-slate-600 hover:border-violet-300"
+                : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-violet-300"
             }`}
           >
             {option}
@@ -319,7 +319,7 @@ function AnswerInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Type the missing word or phrase…"
-        className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
       />
     );
   }
@@ -331,7 +331,7 @@ function AnswerInput({
       onChange={(e) => onChange(e.target.value)}
       rows={4}
       placeholder="Explain in your own words — Claude will grade it and give you feedback…"
-      className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
     />
   );
 }

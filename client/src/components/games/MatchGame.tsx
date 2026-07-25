@@ -100,13 +100,13 @@ export function MatchGame({ deckId, cards }: { deckId: string; cards: Flashcard[
   const best = getBest("match", deckId);
 
   if (pool.length < 2) {
-    return <p className="text-sm text-slate-500">Add at least 2 text cards to this deck to play Match.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Add at least 2 text cards to this deck to play Match.</p>;
   }
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
           <Timer className="h-4 w-4 text-violet-500" />
           {elapsed.toFixed(1)}s
         </span>
@@ -119,10 +119,10 @@ export function MatchGame({ deckId, cards }: { deckId: string; cards: Flashcard[
       </div>
 
       {finished ? (
-        <div className="animate-flip-in rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-md">
+        <div className="animate-flip-in rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-10 text-center shadow-md">
           <Trophy className="mx-auto mb-3 h-10 w-10 text-amber-500" />
-          <p className="font-display text-2xl font-semibold text-slate-800">{elapsed.toFixed(1)}s</p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="font-display text-2xl font-semibold text-slate-800 dark:text-slate-100">{elapsed.toFixed(1)}s</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {record ? "New best time! 🎉" : "Matched them all!"}
           </p>
           <button
@@ -150,7 +150,7 @@ export function MatchGame({ deckId, cards }: { deckId: string; cards: Flashcard[
                       ? "border-red-300 bg-red-50 text-red-600"
                       : isSelected
                         ? "border-violet-500 bg-violet-50 text-violet-700 ring-2 ring-violet-200"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50/40"
+                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-violet-300 hover:bg-violet-50/40"
                 }`}
               >
                 {tile.text}

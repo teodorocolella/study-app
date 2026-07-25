@@ -75,23 +75,23 @@ export function SpeedGame({ deckId, cards }: { deckId: string; cards: Flashcard[
   const best = getBest("speed", deckId);
 
   if (pool.length < 4) {
-    return <p className="text-sm text-slate-500">Add at least 4 text cards to this deck to play Speed round.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Add at least 4 text cards to this deck to play Speed round.</p>;
   }
 
   if (!playing) {
     return (
-      <div className="animate-flip-in rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-md">
+      <div className="animate-flip-in rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-10 text-center shadow-md">
         {score > 0 ? (
           <>
             <Zap className="mx-auto mb-3 h-10 w-10 text-amber-500" />
-            <p className="font-display text-3xl font-semibold text-slate-800">{score}</p>
-            <p className="mt-1 text-sm text-slate-500">{record ? "New high score! 🎉" : "Time's up!"}</p>
+            <p className="font-display text-3xl font-semibold text-slate-800 dark:text-slate-100">{score}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{record ? "New high score! 🎉" : "Time's up!"}</p>
           </>
         ) : (
           <>
             <Zap className="mx-auto mb-3 h-10 w-10 text-violet-500" />
-            <p className="font-display text-xl font-semibold text-slate-800">Speed round</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="font-display text-xl font-semibold text-slate-800 dark:text-slate-100">Speed round</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Answer as many as you can in {ROUND_SECONDS} seconds. Streaks score bonus points.
             </p>
           </>
@@ -110,13 +110,13 @@ export function SpeedGame({ deckId, cards }: { deckId: string; cards: Flashcard[
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
           <Timer className="h-4 w-4 text-violet-500" />
           {timeLeft}s
         </span>
         <span className="flex items-center gap-3 text-sm">
           {streak > 1 && <span className="font-semibold text-amber-500">🔥 {streak}</span>}
-          <span className="flex items-center gap-1 font-semibold text-slate-700">
+          <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
             <Trophy className="h-4 w-4 text-amber-500" />
             {score}
           </span>
@@ -124,17 +124,17 @@ export function SpeedGame({ deckId, cards }: { deckId: string; cards: Flashcard[
       </div>
 
       <div
-        className={`rounded-2xl border-2 bg-white p-8 text-center shadow-md transition-colors ${
-          flash === "right" ? "border-emerald-300" : flash === "wrong" ? "border-red-300" : "border-slate-200"
+        className={`rounded-2xl border-2 bg-white dark:bg-slate-800 p-8 text-center shadow-md transition-colors ${
+          flash === "right" ? "border-emerald-300" : flash === "wrong" ? "border-red-300" : "border-slate-200 dark:border-slate-700"
         }`}
       >
-        <p className="font-display mb-6 text-xl font-medium text-slate-800">{question?.card.front}</p>
+        <p className="font-display mb-6 text-xl font-medium text-slate-800 dark:text-slate-100">{question?.card.front}</p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {question?.options.map((opt) => (
             <button
               key={opt}
               onClick={() => answer(opt)}
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:border-violet-300 hover:bg-violet-50/40"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:border-violet-300 hover:bg-violet-50/40"
             >
               {opt}
             </button>

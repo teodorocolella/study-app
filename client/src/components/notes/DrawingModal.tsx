@@ -75,9 +75,9 @@ export function DrawingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-display flex items-center gap-1.5 font-semibold text-slate-800">
+          <p className="font-display flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
             <Pen className="h-4.5 w-4.5 text-violet-500" />
             Draw a diagram
           </p>
@@ -105,7 +105,7 @@ export function DrawingModal({
           <button
             onClick={() => setErasing((v) => !v)}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-              erasing ? "bg-violet-100 text-violet-700" : "text-slate-600 hover:bg-slate-100"
+              erasing ? "bg-violet-100 text-violet-700" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100"
             }`}
           >
             <Eraser className="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ export function DrawingModal({
             className="w-24 accent-violet-600"
             aria-label="Brush size"
           />
-          <button onClick={clear} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100">
+          <button onClick={clear} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100">
             <Trash2 className="h-3.5 w-3.5" />
             Clear
           </button>
@@ -133,12 +133,12 @@ export function DrawingModal({
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
-          className="w-full touch-none rounded-xl border border-slate-300"
+          className="w-full touch-none rounded-xl border border-slate-300 dark:border-slate-700"
           style={{ cursor: "crosshair", aspectRatio: "640 / 400" }}
         />
 
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+          <button onClick={onClose} className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50">
             Cancel
           </button>
           <button

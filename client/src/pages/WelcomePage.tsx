@@ -92,16 +92,16 @@ export function WelcomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f5fb] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.1),transparent_55%)]">
+    <div className="min-h-screen bg-[#f6f5fb] dark:bg-[#0f0e17] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.1),transparent_55%)]">
       <div className="mx-auto max-w-3xl px-6 py-14">
         <div className="text-center">
           <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-violet-300">
             <GraduationCap className="h-7 w-7" strokeWidth={2.25} />
           </span>
-          <h1 className="font-display text-3xl font-semibold text-slate-800 sm:text-4xl">
+          <h1 className="font-display text-3xl font-semibold text-slate-800 dark:text-slate-100 sm:text-4xl">
             Welcome to Study Hub, {user?.displayName?.split(" ")[0]}!
           </h1>
-          <p className="mx-auto mt-3 max-w-lg text-slate-500">
+          <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
             Your new study companion: notes, smart flashcards, practice quizzes, and an AI
             assistant powered by Claude — all in one place. Here's the one-minute tour.
           </p>
@@ -111,7 +111,7 @@ export function WelcomePage() {
           {TOUR_STOPS.map((stop, i) => (
             <div
               key={stop.title}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
             >
               <div className="mb-3 flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
@@ -121,14 +121,14 @@ export function WelcomePage() {
                   {i + 1} of {TOUR_STOPS.length}
                 </span>
               </div>
-              <h3 className="font-display mb-1 font-semibold text-slate-800">{stop.title}</h3>
-              <p className="text-sm text-slate-500">{stop.description}</p>
+              <h3 className="font-display mb-1 font-semibold text-slate-800 dark:text-slate-100">{stop.title}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{stop.description}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-violet-200 bg-white p-6 shadow-md">
-          <h2 className="font-display text-lg font-semibold text-slate-800">What grade are you in?</h2>
+        <div className="mt-10 rounded-2xl border border-violet-200 bg-white dark:bg-slate-800 p-6 shadow-md">
+          <h2 className="font-display text-lg font-semibold text-slate-800 dark:text-slate-100">What grade are you in?</h2>
           <div className="mt-3 mb-3 flex items-start gap-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-800">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
             <p>
@@ -146,7 +146,7 @@ export function WelcomePage() {
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                   gradeLevel === g.value
                     ? "border-violet-500 bg-violet-50 text-violet-700"
-                    : "border-slate-300 text-slate-600 hover:border-violet-300"
+                    : "border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-violet-300"
                 }`}
               >
                 {g.label}
@@ -157,12 +157,12 @@ export function WelcomePage() {
 
         <form
           onSubmit={(e) => void finish(true, e)}
-          className="mt-6 rounded-2xl border border-violet-200 bg-white p-6 shadow-md"
+          className="mt-6 rounded-2xl border border-violet-200 bg-white dark:bg-slate-800 p-6 shadow-md"
         >
-          <h2 className="font-display text-lg font-semibold text-slate-800">
+          <h2 className="font-display text-lg font-semibold text-slate-800 dark:text-slate-100">
             Let's set up your first class
           </h2>
-          <p className="mb-4 mt-1 text-sm text-slate-500">
+          <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">
             Everything starts with a class folder. What are you studying?
           </p>
           <div className="mb-3 flex gap-2">
@@ -185,7 +185,7 @@ export function WelcomePage() {
               placeholder="Class name (e.g. Biology)"
               value={className}
               onChange={(e) => setClassName(e.target.value)}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+              className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
             />
             <button
               type="submit"

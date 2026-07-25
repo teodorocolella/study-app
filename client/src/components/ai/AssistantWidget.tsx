@@ -177,7 +177,7 @@ export function AssistantWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex h-[min(620px,calc(100dvh-5rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
+    <div className="fixed bottom-5 right-5 z-40 flex h-[min(620px,calc(100dvh-5rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl shadow-slate-300/60">
       <div className="flex items-center justify-between bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3">
         <div>
           <p className="flex items-center gap-1.5 text-sm font-semibold text-white">
@@ -210,7 +210,7 @@ export function AssistantWidget() {
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="space-y-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Hi! I'm your study assistant, powered by Claude. I can see all your classes,
               notes, and flashcards — ask me anything, have me quiz you, or let me make
               flashcards for you.
@@ -236,7 +236,7 @@ export function AssistantWidget() {
                 className={`inline-block max-w-[88%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-sm ${
                   m.role === "user"
                     ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-700"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
                 }`}
               >
                 {m.content}
@@ -266,7 +266,7 @@ export function AssistantWidget() {
 
         {sending && messages[messages.length - 1]?.content === "" && (
           <div className="text-left">
-            <span className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-100 px-3.5 py-2 text-sm text-slate-500">
+            <span className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-700 px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Thinking…
             </span>
@@ -275,14 +275,14 @@ export function AssistantWidget() {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-slate-200 p-3">
+      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-slate-200 dark:border-slate-700 p-3">
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about anything you're studying…"
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />
         <button
           type="submit"
