@@ -52,8 +52,13 @@ export async function postGenerateFlashcards(req: Request, res: Response) {
     return;
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { gradeLevel: true },
+  });
+
   try {
-    const cards = await generateFlashcardsFromNotes(text, count ?? 10);
+    const cards = await generateFlashcardsFromNotes(text, count ?? 10, user?.gradeLevel);
     const created = await prisma.$transaction(
       cards.map((c) => prisma.flashcard.create({ data: { front: c.front, back: c.back, deckId } })),
     );
@@ -93,8 +98,13 @@ export async function postGenerateExercises(req: Request, res: Response) {
     return;
   }
 
+  const gradeUser = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { gradeLevel: true },
+  });
+
   try {
-    const generated = await generateExercisesFromNotes(text, types, count ?? 10);
+    const generated = await generateExercisesFromNotes(text, types, count ?? 10, gradeUser?.gradeLevel);
     const set = await prisma.exerciseSet.create({
       data: {
         name: setName ?? defaultName,

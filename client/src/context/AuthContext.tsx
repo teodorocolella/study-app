@@ -7,6 +7,7 @@ export interface User {
   displayName: string;
   avatarUrl: string | null;
   hasOnboarded: boolean;
+  gradeLevel: number | null;
 }
 
 export interface AuthContextValue {
@@ -19,6 +20,7 @@ export interface AuthContextValue {
     displayName?: string;
     avatarUrl?: string | null;
     hasOnboarded?: true;
+    gradeLevel?: number | null;
   }) => Promise<void>;
 }
 
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     displayName?: string;
     avatarUrl?: string | null;
     hasOnboarded?: true;
+    gradeLevel?: number | null;
   }) {
     const updated = await api.patch<User>("/auth/me", updates);
     setUser(updated);

@@ -8,13 +8,15 @@ generator client {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  displayName   String
-  avatarUrl     String?        @db.Text
-  hasOnboarded  Boolean        @default(false)
-  createdAt     DateTime       @default(now())
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  displayName    String
+  avatarUrl      String?        @db.Text
+  hasOnboarded   Boolean        @default(false)
+  gradeLevel     Int? // 1-12 = school grade, 13 = college/other; null = not set
+  gradeUpdatedAt DateTime? // when gradeLevel was last set — drives yearly auto-advance
+  createdAt      DateTime       @default(now())
 
   classFolders  ClassFolder[]
   refreshTokens RefreshToken[]

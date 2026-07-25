@@ -10,16 +10,25 @@ export const MODEL = "claude-sonnet-5";
 export const NO_MARKDOWN =
   "Write in plain prose only — do not use markdown formatting of any kind (no **bold**, no # headers, no bullet-point dashes or asterisks, no backticks). If you want to separate distinct points, put each on its own line as a plain sentence instead of a markdown list.";
 
+/** A short instruction telling Claude to pitch content to the student's grade level. */
+export function gradeInstruction(gradeLevel?: number | null): string {
+  if (gradeLevel == null) return "";
+  if (gradeLevel >= 13) {
+    return "The student is in college or beyond — you can use mature vocabulary and go into depth.";
+  }
+  return `The student is in grade ${gradeLevel}. Pitch the vocabulary, difficulty, and examples to a grade-${gradeLevel} level.`;
+}
+
 const flashcardsSchema = z.object({
   cards: z.array(z.object({ front: z.string(), back: z.string() })),
 });
 
-export async function generateFlashcardsFromNotes(noteText: string, count = 10) {
+export async function generateFlashcardsFromNotes(noteText: string, count = 10, gradeLevel?: number | null) {
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 4096,
     thinking: { type: "disabled" },
-    system: `You turn study notes into flashcards. Generate exactly ${count} flashcards from the student's notes below. Each flashcard should test one discrete fact or concept — keep the front short (a question or term) and the back concise (the answer or definition). ${NO_MARKDOWN}`,
+    system: `You turn study notes into flashcards. Generate exactly ${count} flashcards from the student's notes below. Each flashcard should test one discrete fact or concept — keep the front short (a question or term) and the back concise (the answer or definition). ${gradeInstruction(gradeLevel)} ${NO_MARKDOWN}`,
     messages: [{ role: "user", content: noteText }],
     output_config: { format: zodOutputFormat(flashcardsSchema) },
   });
@@ -58,12 +67,13 @@ export async function generateExercisesFromNotes(
   noteText: string,
   types: ExerciseType[],
   count: number,
+  gradeLevel?: number | null,
 ) {
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 8192,
     thinking: { type: "disabled" },
-    system: `You turn study notes into practice-quiz exercises. Generate exactly ${count} exercises from the student's notes below, using only these types: ${types.join(", ")}. Mix the allowed types roughly evenly and order them so the quiz feels varied. Test understanding, not trivia — prefer the ideas the notes emphasize.\n${EXERCISE_RULES}\n${NO_MARKDOWN}`,
+    system: `You turn study notes into practice-quiz exercises. Generate exactly ${count} exercises from the student's notes below, using only these types: ${types.join(", ")}. Mix the allowed types roughly evenly and order them so the quiz feels varied. Test understanding, not trivia — prefer the ideas the notes emphasize. ${gradeInstruction(gradeLevel)}\n${EXERCISE_RULES}\n${NO_MARKDOWN}`,
     messages: [{ role: "user", content: noteText }],
     output_config: { format: zodOutputFormat(generatedExerciseSchema) },
   });

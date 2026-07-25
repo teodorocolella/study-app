@@ -77,7 +77,7 @@ export function MessagesPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display flex items-center gap-2 text-2xl font-semibold text-slate-800">
           <MessageSquare className="h-5.5 w-5.5 text-violet-500" />
-          Messages
+          Study Groups
         </h1>
         <button
           onClick={() => {

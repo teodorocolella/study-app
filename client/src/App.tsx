@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { trackPageView } from "./lib/analytics";
+import { ClassesPage } from "./pages/ClassesPage";
 import { ClassFolderPage } from "./pages/ClassFolderPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeckPage } from "./pages/DeckPage";
@@ -40,6 +41,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/welcome" element={protect(<WelcomePage />)} />
         <Route path="/dashboard" element={protect(<DashboardPage />)} />
+        <Route path="/classes" element={protect(<ClassesPage />)} />
         <Route path="/classes/:classId" element={protect(<ClassFolderPage />)} />
         <Route
           path="/classes/:classId/notes/:noteId"
@@ -50,7 +52,8 @@ function App() {
         <Route path="/practice/:setId" element={protect(<ExerciseSetPage />)} />
         <Route path="/practice/:setId/run" element={protect(<PracticeSessionPage />)} />
         <Route path="/study" element={protect(<StudySessionPage />)} />
-        <Route path="/messages" element={protect(<MessagesPage />)} />
+        <Route path="/groups" element={protect(<MessagesPage />)} />
+        <Route path="/messages" element={<Navigate to="/groups" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

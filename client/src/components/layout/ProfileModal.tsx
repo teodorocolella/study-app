@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { ApiError } from "../../api/client";
 import { resizeImageToDataUrl } from "../../lib/imageResize";
+import { GRADE_OPTIONS } from "../../lib/gradeLevels";
 import { Avatar } from "./Avatar";
 
 export function ProfileModal({ onClose }: { onClose: () => void }) {
@@ -10,6 +11,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl ?? null);
+  const [gradeLevel, setGradeLevel] = useState<number | null>(user?.gradeLevel ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
     setSaving(true);
     setError(null);
     try {
-      await updateProfile({ displayName: displayName.trim(), avatarUrl: avatarPreview });
+      await updateProfile({ displayName: displayName.trim(), avatarUrl: avatarPreview, gradeLevel });
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to update profile");
@@ -80,6 +82,23 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           onChange={(e) => setDisplayName(e.target.value)}
           className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />
+
+        <label className="mb-1.5 block text-sm font-medium text-slate-600">Grade level</label>
+        <select
+          value={gradeLevel ?? ""}
+          onChange={(e) => setGradeLevel(e.target.value ? Number(e.target.value) : null)}
+          className="mb-1.5 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+        >
+          <option value="">Prefer not to say</option>
+          {GRADE_OPTIONS.map((g) => (
+            <option key={g.value} value={g.value}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+        <p className="mb-4 text-xs text-slate-400">
+          Used only to tailor your recommendations. Advances automatically each school year.
+        </p>
 
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 

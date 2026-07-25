@@ -106,7 +106,7 @@ export function DashboardPage() {
             <QuickAction
               icon={MessageSquare}
               label="Message a classmate"
-              onClick={() => navigate("/messages")}
+              onClick={() => navigate("/groups")}
             />
             {summary && summary.totalDue > 0 && (
               <QuickAction

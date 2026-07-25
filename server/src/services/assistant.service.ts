@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { escapeHtml, stripHtml } from "../lib/html.js";
 import { prisma } from "../prisma.js";
-import { client, MODEL, NO_MARKDOWN } from "./claude.service.js";
+import { client, gradeInstruction, MODEL, NO_MARKDOWN } from "./claude.service.js";
 import { getOwnedClassFolder, getOwnedDeck } from "./ownership.service.js";
 
 // Server-sent events pushed to the widget while the assistant works.
@@ -403,9 +403,10 @@ async function executeAssistantTool(
   return { result: `Unknown tool: ${toolName}`, isError: true };
 }
 
-function buildSystemPrompt(workspaceContext: string, pageContext: string) {
+function buildSystemPrompt(workspaceContext: string, pageContext: string, gradeLevel?: number | null) {
   return [
     "You are the always-available AI study assistant inside Study Hub, a study app used by middle school and high school students. You are a patient, encouraging tutor. You are powered by Claude, Anthropic's AI model — if a student asks what you are, tell them that.",
+    gradeInstruction(gradeLevel) ? `\n${gradeInstruction(gradeLevel)}` : "",
     "",
     "Below is a live snapshot of the student's entire workspace — every class, note, and flashcard deck, including which cards are due for spaced-repetition review. Treat it as the source of truth about what they are studying.",
     "",
@@ -436,9 +437,10 @@ export async function runAssistant(
   page: PageContext | undefined,
   send: (event: AssistantEvent) => void,
 ): Promise<void> {
-  const [workspaceContext, pageContext] = await Promise.all([
+  const [workspaceContext, pageContext, gradeUser] = await Promise.all([
     buildWorkspaceContext(userId),
     buildPageContext(userId, page),
+    prisma.user.findUnique({ where: { id: userId }, select: { gradeLevel: true } }),
   ]);
 
   const messages: Anthropic.MessageParam[] = [
@@ -451,7 +453,7 @@ export async function runAssistant(
       model: MODEL,
       max_tokens: 2048,
       thinking: { type: "disabled" },
-      system: buildSystemPrompt(workspaceContext, pageContext),
+      system: buildSystemPrompt(workspaceContext, pageContext, gradeUser?.gradeLevel),
       tools: assistantTools,
       messages,
     });

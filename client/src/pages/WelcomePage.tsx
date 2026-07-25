@@ -9,12 +9,14 @@ import {
   Share2,
   Sparkles,
 } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder } from "../api/types";
 import { useAuth } from "../hooks/useAuth";
 import { CLASS_COLORS } from "../lib/classColors";
+import { GRADE_OPTIONS } from "../lib/gradeLevels";
 
 const TOUR_STOPS = [
   {
@@ -60,6 +62,7 @@ export function WelcomePage() {
   const navigate = useNavigate();
   const [className, setClassName] = useState("");
   const [selectedColor, setSelectedColor] = useState(CLASS_COLORS[0].id);
+  const [gradeLevel, setGradeLevel] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +80,10 @@ export function WelcomePage() {
         });
         destination = `/classes/${created.id}`;
       }
-      await updateProfile({ hasOnboarded: true });
+      await updateProfile({
+        hasOnboarded: true,
+        ...(gradeLevel != null ? { gradeLevel } : {}),
+      });
       navigate(destination, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong — try again");
@@ -121,9 +127,37 @@ export function WelcomePage() {
           ))}
         </div>
 
+        <div className="mt-10 rounded-2xl border border-violet-200 bg-white p-6 shadow-md">
+          <h2 className="font-display text-lg font-semibold text-slate-800">What grade are you in?</h2>
+          <div className="mt-3 mb-3 flex items-start gap-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-800">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+            <p>
+              Don't worry — this isn't for collecting your private data. It's so <strong>we</strong>{" "}
+              can give <strong>you</strong> recommendations tuned to your grade level. It updates on
+              its own each school year, so you'll never have to set it again.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {GRADE_OPTIONS.map((g) => (
+              <button
+                key={g.value}
+                type="button"
+                onClick={() => setGradeLevel(g.value)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  gradeLevel === g.value
+                    ? "border-violet-500 bg-violet-50 text-violet-700"
+                    : "border-slate-300 text-slate-600 hover:border-violet-300"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form
           onSubmit={(e) => void finish(true, e)}
-          className="mt-10 rounded-2xl border border-violet-200 bg-white p-6 shadow-md"
+          className="mt-6 rounded-2xl border border-violet-200 bg-white p-6 shadow-md"
         >
           <h2 className="font-display text-lg font-semibold text-slate-800">
             Let's set up your first class

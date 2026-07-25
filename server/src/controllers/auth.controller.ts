@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { COLLEGE_GRADE, currentGrade } from "../lib/gradeLevel.js";
 import { prisma } from "../prisma.js";
 import {
   createRefreshToken,
@@ -16,6 +17,7 @@ function publicUser(user: {
   displayName: string;
   avatarUrl: string | null;
   hasOnboarded: boolean;
+  gradeLevel: number | null;
 }) {
   return {
     id: user.id,
@@ -23,6 +25,7 @@ function publicUser(user: {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     hasOnboarded: user.hasOnboarded,
+    gradeLevel: user.gradeLevel,
   };
 }
 
@@ -146,11 +149,23 @@ export async function logout(req: Request, res: Response) {
 }
 
 export async function me(req: Request, res: Response) {
-  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  let user = await prisma.user.findUnique({ where: { id: req.userId } });
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
   }
+
+  // Keep the grade current: advance it if a new school year has started.
+  if (user.gradeLevel != null && user.gradeUpdatedAt) {
+    const advanced = currentGrade(user.gradeLevel, user.gradeUpdatedAt);
+    if (advanced !== user.gradeLevel) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { gradeLevel: advanced, gradeUpdatedAt: new Date() },
+      });
+    }
+  }
+
   res.json(publicUser(user));
 }
 
@@ -163,6 +178,7 @@ const updateProfileSchema = z.object({
     .nullable()
     .optional(),
   hasOnboarded: z.literal(true).optional(),
+  gradeLevel: z.number().int().min(1).max(COLLEGE_GRADE).nullable().optional(),
 });
 
 export async function updateProfile(req: Request, res: Response) {
@@ -171,9 +187,12 @@ export async function updateProfile(req: Request, res: Response) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
+  const { gradeLevel, ...rest } = parsed.data;
   const user = await prisma.user.update({
     where: { id: req.userId },
-    data: parsed.data,
+    // Stamp gradeUpdatedAt whenever the grade is (re)set, so auto-advance counts from now.
+    data:
+      gradeLevel !== undefined ? { ...rest, gradeLevel, gradeUpdatedAt: new Date() } : rest,
   });
   res.json(publicUser(user));
 }
