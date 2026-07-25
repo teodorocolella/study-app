@@ -30,8 +30,12 @@ an AI tutor powered by the Claude API — built for middle school through high s
 - **Email reminders** — an optional daily email nudge when cards are due and you haven't
   studied yet (any SMTP provider)
 - **Dashboard** — see what's due for review today across every class, plus study streaks
-- **Accounts** — full signup/login so each user's classes, notes, and progress are private and
-  isolated from everyone else's
+- **Accounts** — full signup/login, plus optional "Continue with Google / Microsoft" social
+  sign-in; each user's classes, notes, and progress are private and isolated from everyone else's
+- **More study tools** — a collapsible sidebar, per-grade-level AI recommendations (auto-advancing
+  each school year), photos and math (LaTeX) on flashcards, image-occlusion cards, a formula/
+  reference library, note diagrams, study games (Match, Speed round, Answer Blocks), and
+  multi-person Study Groups with shared notes/decks/quizzes
 
 ## Tech stack
 
@@ -107,6 +111,8 @@ Visit `http://localhost:5173` and sign up for an account.
 | `EMAIL_FROM`          | Optional. From address for reminder emails (defaults to `SMTP_USER`).    |
 | `APP_URL`             | Public URL of the app, used for links inside reminder emails.            |
 | `REMINDER_CRON`       | When the daily reminder job runs (cron syntax, server time). Default `0 16 * * *`. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Continue with Google". Redirect URI: `<APP_URL>/api/auth/oauth/google/callback`. |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Optional. Enables "Continue with Microsoft". Redirect URI: `<APP_URL>/api/auth/oauth/microsoft/callback`. |
 | `VITE_GA_MEASUREMENT_ID` | Optional. Google Analytics 4 Measurement ID (`G-XXXXXXXXXX`). Leave unset to disable analytics. Vite bakes this into the build at build time, so it must be set on Render's Web Service *before* the build runs — not just at runtime. |
 
 ## Deployment (Render)

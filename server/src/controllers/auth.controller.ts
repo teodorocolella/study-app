@@ -1,6 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { env } from "../env.js";
 import { COLLEGE_GRADE, currentGrade } from "../lib/gradeLevel.js";
+import { param } from "../lib/params.js";
 import { prisma } from "../prisma.js";
 import {
   createRefreshToken,
@@ -10,6 +13,12 @@ import {
   verifyPassword,
   verifyRefreshToken,
 } from "../services/auth.service.js";
+import {
+  buildAuthorizationUrl,
+  enabledProviders,
+  exchangeCodeForProfile,
+  isProviderEnabled,
+} from "../services/oauth.service.js";
 
 function publicUser(user: {
   id: string;
@@ -137,6 +146,68 @@ export async function refresh(req: Request, res: Response) {
 
   const accessToken = signAccessToken(payload.userId);
   res.json({ accessToken });
+}
+
+// --- Social sign-in (OAuth) ---
+
+const OAUTH_STATE_COOKIE = "oauthState";
+
+export function getAuthProviders(_req: Request, res: Response) {
+  res.json(enabledProviders());
+}
+
+export function oauthStart(req: Request, res: Response) {
+  const provider = param(req, "provider");
+  if (!isProviderEnabled(provider)) {
+    res.redirect(`${env.APP_URL}/login?error=provider_disabled`);
+    return;
+  }
+  const state = randomUUID();
+  res.cookie(OAUTH_STATE_COOKIE, `${provider}:${state}`, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 10 * 60 * 1000,
+  });
+  res.redirect(buildAuthorizationUrl(provider, state));
+}
+
+export async function oauthCallback(req: Request, res: Response) {
+  const provider = param(req, "provider");
+  const failure = `${env.APP_URL}/login?error=oauth`;
+  try {
+    const { code, state } = req.query;
+    const cookie = req.cookies?.[OAUTH_STATE_COOKIE];
+    res.clearCookie(OAUTH_STATE_COOKIE);
+
+    if (
+      !isProviderEnabled(provider) ||
+      typeof code !== "string" ||
+      typeof state !== "string" ||
+      cookie !== `${provider}:${state}`
+    ) {
+      res.redirect(failure);
+      return;
+    }
+
+    const profile = await exchangeCodeForProfile(provider, code);
+    const email = profile.email.toLowerCase();
+
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // New account from a verified social identity — no usable password until they set one.
+      const passwordHash = await hashPassword(randomUUID() + randomUUID());
+      user = await prisma.user.create({
+        data: { email, displayName: profile.displayName, passwordHash },
+      });
+    }
+
+    await issueTokens(res, user.id);
+    res.redirect(`${env.APP_URL}/dashboard`);
+  } catch (err) {
+    console.error(`OAuth ${provider} error:`, err);
+    res.redirect(failure);
+  }
 }
 
 export async function logout(req: Request, res: Response) {

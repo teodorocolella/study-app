@@ -2,6 +2,7 @@ import { GraduationCap, Lock, Mail, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
+import { SocialSignIn } from "../components/auth/SocialSignIn";
 import { useAuth } from "../hooks/useAuth";
 
 export function SignupPage() {
@@ -90,6 +91,7 @@ export function SignupPage() {
               {submitting ? "Creating account…" : "Sign up"}
             </button>
           </form>
+          <SocialSignIn />
         </div>
         <p className="mt-6 text-center text-sm text-slate-500">
           Already have an account?{" "}
