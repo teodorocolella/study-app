@@ -9,6 +9,7 @@ import {
   Play,
   Plus,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ import { api, ApiError } from "../api/client";
 import type { ClassFolder, DashboardSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
+import { ImportModal } from "../components/import/ImportModal";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { CLASS_COLORS, classGradient } from "../lib/classColors";
 
@@ -27,6 +29,7 @@ export function DashboardPage() {
   const [selectedColor, setSelectedColor] = useState(CLASS_COLORS[0].id);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   async function loadSummary() {
     const data = await api.get<DashboardSummary>("/dashboard/summary");
@@ -99,6 +102,11 @@ export function DashboardPage() {
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Quick actions</p>
           <div className="space-y-2">
+            <QuickAction
+              icon={Upload}
+              label="Import notes (paste or photo)"
+              onClick={() => setImportOpen(true)}
+            />
             <QuickAction
               icon={Sparkles}
               label="Ask your AI assistant"
@@ -192,6 +200,8 @@ export function DashboardPage() {
         </div>
       </form>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+      {importOpen && <ImportModal onClose={() => setImportOpen(false)} />}
     </AppShell>
   );
 }

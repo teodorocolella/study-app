@@ -1,15 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { stripHtml } from "../lib/html.js";
+import { paragraphsToHtml, stripHtml } from "../lib/html.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import { runAssistant, type AssistantEvent } from "../services/assistant.service.js";
 import {
   EXERCISE_TYPES,
   explainDifferently,
+  extractNoteFromSource,
   generateExercisesFromNotes,
   generateFlashcardsFromNotes,
+  type ImportSource,
   summarizeNote,
 } from "../services/claude.service.js";
 import {
@@ -128,6 +130,108 @@ export async function postGenerateExercises(req: Request, res: Response) {
       classFolderId: set.classFolderId,
       exerciseCount: set._count.exercises,
     });
+  } catch (err) {
+    handleClaudeError(err);
+  }
+}
+
+const importSchema = z
+  .object({
+    classId: z.string(),
+    text: z.string().max(50000).optional(),
+    dataUrl: z
+      .string()
+      .max(12_000_000)
+      .regex(/^data:(image\/(png|jpeg|jpg|webp|gif)|application\/pdf);base64,/, "Unsupported file")
+      .optional(),
+    makeDeck: z.boolean().default(true),
+    makeQuiz: z.boolean().default(true),
+    quizTypes: z.array(z.enum(EXERCISE_TYPES)).min(1).default([...EXERCISE_TYPES]),
+  })
+  .refine((d) => (d.text && d.text.trim()) || d.dataUrl, {
+    message: "Paste some text or upload a file",
+  });
+
+function sourceFromInput(text?: string, dataUrl?: string): ImportSource {
+  if (dataUrl) {
+    const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)!;
+    const mime = match[1];
+    const data = match[2];
+    if (mime === "application/pdf") return { kind: "pdf", data };
+    const mediaType = (mime === "image/jpg" ? "image/jpeg" : mime) as
+      | "image/jpeg"
+      | "image/png"
+      | "image/gif"
+      | "image/webp";
+    return { kind: "image", mediaType, data };
+  }
+  return { kind: "text", text: text! };
+}
+
+export async function postImportContent(req: Request, res: Response) {
+  const parsed = importSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const { classId, text, dataUrl, makeDeck, makeQuiz, quizTypes } = parsed.data;
+  const classFolder = await getOwnedClassFolder(req.userId, classId);
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { gradeLevel: true },
+  });
+  const grade = user?.gradeLevel;
+
+  try {
+    const source = sourceFromInput(text, dataUrl);
+    const { title, content } = await extractNoteFromSource(source, grade);
+
+    const note = await prisma.note.create({
+      data: { title, contentHtml: paragraphsToHtml(content), classFolderId: classId },
+    });
+
+    const result: {
+      classId: string;
+      note: { id: string; title: string };
+      deck?: { id: string; count: number };
+      quiz?: { id: string; count: number };
+    } = { classId, note: { id: note.id, title } };
+
+    if (makeDeck) {
+      const cards = await generateFlashcardsFromNotes(content, 10, grade);
+      const deck = await prisma.deck.create({
+        data: {
+          name: `${title} flashcards`,
+          classFolderId: classId,
+          cards: { create: cards.map((c) => ({ front: c.front, back: c.back })) },
+        },
+      });
+      result.deck = { id: deck.id, count: cards.length };
+    }
+
+    if (makeQuiz) {
+      const exercises = await generateExercisesFromNotes(content, quizTypes, 10, grade);
+      const set = await prisma.exerciseSet.create({
+        data: {
+          name: `${title} quiz`,
+          classFolderId: classId,
+          exercises: {
+            create: exercises.map((e, i) => ({
+              type: e.type,
+              prompt: e.prompt,
+              optionsJson: e.type === "mcq" && e.options ? JSON.stringify(e.options) : null,
+              answer: e.type === "true_false" ? e.answer.toLowerCase() : e.answer,
+              explanation: e.explanation,
+              position: i,
+            })),
+          },
+        },
+      });
+      result.quiz = { id: set.id, count: exercises.length };
+    }
+
+    void classFolder;
+    res.status(201).json(result);
   } catch (err) {
     handleClaudeError(err);
   }

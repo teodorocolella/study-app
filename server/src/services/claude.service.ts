@@ -117,6 +117,52 @@ export async function gradeShortAnswers(submissions: ShortAnswerSubmission[]) {
   return response.parsed_output.grades;
 }
 
+const importedNoteSchema = z.object({ title: z.string(), content: z.string() });
+
+export type ImportSource =
+  | { kind: "text"; text: string }
+  | { kind: "image"; mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string }
+  | { kind: "pdf"; data: string };
+
+/**
+ * Turns a student's raw material — typed text, a photo of notes/a textbook
+ * page, or a PDF — into a clean, titled study note using Claude (vision for
+ * images, document input for PDFs).
+ */
+export async function extractNoteFromSource(source: ImportSource, gradeLevel?: number | null) {
+  const instruction =
+    "Turn this material into a clean, well-organized study note. Extract the key facts and ideas faithfully — do not invent anything that isn't there. Give it a short descriptive title, and write the content as readable plain text with blank lines between paragraphs and short sections.";
+
+  let content: Anthropic.ContentBlockParam[];
+  if (source.kind === "text") {
+    content = [{ type: "text", text: `${instruction}\n\n${source.text}` }];
+  } else if (source.kind === "image") {
+    content = [
+      { type: "image", source: { type: "base64", media_type: source.mediaType, data: source.data } },
+      { type: "text", text: instruction },
+    ];
+  } else {
+    content = [
+      { type: "document", source: { type: "base64", media_type: "application/pdf", data: source.data } },
+      { type: "text", text: instruction },
+    ];
+  }
+
+  const response = await client.messages.parse({
+    model: MODEL,
+    max_tokens: 8192,
+    thinking: { type: "disabled" },
+    system: `You help students turn raw material into study notes. ${gradeInstruction(gradeLevel)} ${NO_MARKDOWN}`,
+    messages: [{ role: "user", content }],
+    output_config: { format: zodOutputFormat(importedNoteSchema) },
+  });
+
+  if (!response.parsed_output) {
+    throw new Error("Claude could not read that material");
+  }
+  return response.parsed_output;
+}
+
 export async function summarizeNote(noteText: string) {
   const response = await client.messages.create({
     model: MODEL,

@@ -1,9 +1,10 @@
-import { ArrowLeft, BrainCircuit, Check, FileText, Layers, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Check, FileText, Layers, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, Deck, ExerciseSetSummary, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { ImportModal } from "../components/import/ImportModal";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { CLASS_COLORS, classGradient } from "../lib/classColors";
 
@@ -22,6 +23,7 @@ export function ClassFolderPage() {
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   async function load() {
     if (!classId) return;
@@ -188,10 +190,19 @@ export function ClassFolderPage() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       <section className="mb-10">
-        <h2 className="font-display mb-3 flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-100">
-          <FileText className="h-4.5 w-4.5 text-slate-400" />
-          Notes
-        </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-100">
+            <FileText className="h-4.5 w-4.5 text-slate-400" />
+            Notes
+          </h2>
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Import notes
+          </button>
+        </div>
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
           {notes.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No notes yet.</p>}
           {notes.map((note) => (
@@ -246,6 +257,16 @@ export function ClassFolderPage() {
             </Link>
           ))}
         </div>
+        {importOpen && classId && (
+          <ImportModal
+            classId={classId}
+            onClose={() => {
+              setImportOpen(false);
+              void load();
+            }}
+          />
+        )}
+
         <form onSubmit={handleCreateDeck} className="flex gap-2">
           <input
             type="text"
