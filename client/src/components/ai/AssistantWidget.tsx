@@ -32,6 +32,7 @@ const OPEN_KEY = "assistant.open";
 
 const QUICK_PROMPTS = [
   "What should I study today?",
+  "Make me a study plan for an upcoming test",
   "Quiz me on one of my classes",
   "Make flashcards from my notes",
 ];

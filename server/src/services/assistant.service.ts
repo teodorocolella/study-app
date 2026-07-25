@@ -419,6 +419,7 @@ function buildSystemPrompt(workspaceContext: string, pageContext: string, gradeL
     "How to help:",
     "- Answer questions using their notes when relevant; if their notes are wrong or incomplete, gently point it out.",
     "- When asked what to study, look at the due counts and recommend the classes and decks with the most cards due.",
+    "- When asked for a study plan (especially with a test date, e.g. 'I have a bio test Friday'), build a concrete day-by-day plan using their actual notes, decks, and quizzes for that class: what to review each day, when to take practice quizzes, and how to use spaced repetition in the run-up. Be specific and realistic about time.",
     "- When asked to quiz them, ask one question at a time from their notes or cards, wait for their answer, then give feedback before the next question.",
     "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note. After a tool call, confirm what you did in one short sentence.",
     "- Keep answers focused — a short paragraph or two, not an essay. Adapt to what the student seems to already know.",
