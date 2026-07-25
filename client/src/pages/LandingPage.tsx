@@ -1,11 +1,11 @@
 import {
-  Bell,
   BookOpen,
   Flame,
+  Gamepad2,
   GraduationCap,
   Layers,
-  Share2,
   Sparkles,
+  Users,
   Wand2,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -17,37 +17,37 @@ const FEATURES = [
     icon: Sparkles,
     title: "Claude AI assistant",
     description:
-      "An assistant powered by Claude lives in the corner of every page. It knows all your notes and flashcards — ask it anything, get quizzed, or have it build study material for you.",
+      "An assistant powered by Claude lives in the corner of every page. It knows all your notes and flashcards — ask it anything, get quizzed, have it make study material, or build you a day-by-day plan before a test.",
   },
   {
     icon: Layers,
-    title: "Spaced repetition",
+    title: "Smart flashcards",
     description:
-      "A proven SM-2 scheduler resurfaces cards you miss sooner and pushes ones you know further out, so every minute of review counts.",
+      "Spaced repetition resurfaces what you miss at just the right time. Add photos, math equations, and image-occlusion cards for diagrams, maps, and anatomy.",
   },
   {
     icon: Wand2,
-    title: "Quizzes & flashcards from notes",
+    title: "Practice quizzes",
     description:
-      "Turn any note into a flashcard deck or a full practice quiz in one click — multiple choice, true/false, fill-in-the-blank, and short answers that Claude grades with feedback.",
+      "Turn any note into a quiz in one click — multiple choice, true/false, fill-in-the-blank, and short answers that Claude grades with real feedback.",
   },
   {
-    icon: Share2,
-    title: "Share with classmates",
+    icon: Gamepad2,
+    title: "Learn with games",
     description:
-      "Message other students, and send them copies of your notes and flashcard decks. Great for study groups before a test.",
+      "Play your flashcards: Match against the clock, a 60-second Speed round, or the falling-block Answer Blocks arcade. Studying that doesn't feel like studying.",
   },
   {
-    icon: Bell,
-    title: "Email reminders",
+    icon: Users,
+    title: "Study groups",
     description:
-      "When cards are due and you haven't studied yet, Study Hub emails you a nudge so your streak never dies by accident.",
+      "Create a group, invite classmates by email, chat, and share notes, decks, and quizzes with everyone at once — each person keeps their own copy.",
   },
   {
     icon: BookOpen,
-    title: "Everything organized",
+    title: "Built for how you study",
     description:
-      "Class folders keep notes and decks tidy per subject, and the dashboard shows exactly what's due today across all of them.",
+      "A formula and reference library, dark mode, email reminders when cards are due, sign in with Google or Microsoft, and it installs to your phone and works offline.",
   },
 ];
 
@@ -116,9 +116,8 @@ export function LandingPage() {
             The study app that actually studies <span className="text-violet-600">with</span> you.
           </h1>
           <p className="mt-4 text-lg text-slate-500 dark:text-slate-400">
-            Notes, spaced-repetition flashcards, and a Claude-powered assistant that knows
-            everything you're studying — plus sharing with classmates and reminders when it's
-            time to review.
+            Notes, smart flashcards, quizzes, and study games — with a Claude-powered assistant
+            that knows everything you're studying, plus study groups to learn with classmates.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link
