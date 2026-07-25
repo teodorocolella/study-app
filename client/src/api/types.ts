@@ -24,10 +24,22 @@ export interface Deck {
   _count: { cards: number };
 }
 
+export interface Occlusion {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+}
+
 export interface Flashcard {
   id: string;
   front: string;
   back: string;
+  frontImage: string | null;
+  backImage: string | null;
+  kind: "basic" | "image_occlusion";
+  occlusionsJson: string | null;
   deckId: string;
   createdAt: string;
 }

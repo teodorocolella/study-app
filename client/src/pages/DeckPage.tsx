@@ -1,9 +1,11 @@
-import { ArrowLeft, Pencil, Play, Plus, Share2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Pencil, Play, Plus, ScanEye, Share2, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, Flashcard } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { ImagePicker } from "../components/cards/ImagePicker";
+import { OcclusionCardModal } from "../components/cards/OcclusionCardModal";
 import { ShareModal } from "../components/share/ShareModal";
 
 export function DeckPage() {
@@ -13,11 +15,14 @@ export function DeckPage() {
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [backImage, setBackImage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [occlusionOpen, setOcclusionOpen] = useState(false);
 
   async function load() {
     if (!deckId) return;
@@ -38,13 +43,25 @@ export function DeckPage() {
     e.preventDefault();
     if (!front.trim() || !back.trim() || !deckId) return;
     try {
-      const card = await api.post<Flashcard>(`/decks/${deckId}/cards`, { front, back });
+      const card = await api.post<Flashcard>(`/decks/${deckId}/cards`, {
+        front,
+        back,
+        frontImage,
+        backImage,
+      });
       setCards((prev) => [...prev, card]);
       setFront("");
       setBack("");
+      setFrontImage(null);
+      setBackImage(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to add card");
     }
+  }
+
+  function handleOcclusionCreated(card: Flashcard) {
+    setCards((prev) => [...prev, card]);
+    setOcclusionOpen(false);
   }
 
   function startEdit(card: Flashcard) {
@@ -155,14 +172,41 @@ export function DeckPage() {
               key={card.id}
               className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div>
-                <p className="font-medium text-slate-700">{card.front}</p>
-                <p className="text-sm text-slate-500">{card.back}</p>
+              <div className="flex items-center gap-3">
+                {card.kind === "image_occlusion" ? (
+                  <div className="flex items-center gap-3">
+                    {card.frontImage && (
+                      <img src={card.frontImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                    )}
+                    <div>
+                      <p className="flex items-center gap-1.5 font-medium text-slate-700">
+                        <ScanEye className="h-4 w-4 text-violet-500" />
+                        Image occlusion
+                      </p>
+                      <p className="text-sm text-slate-500">{card.back}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {card.frontImage && (
+                      <img src={card.frontImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                    )}
+                    <div>
+                      <p className="font-medium text-slate-700">{card.front}</p>
+                      <p className="text-sm text-slate-500">{card.back}</p>
+                    </div>
+                    {card.backImage && (
+                      <img src={card.backImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                    )}
+                  </>
+                )}
               </div>
               <div className="flex gap-3 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
-                <button onClick={() => startEdit(card)} className="hover:text-violet-600">
-                  <Pencil className="h-4 w-4" />
-                </button>
+                {card.kind !== "image_occlusion" && (
+                  <button onClick={() => startEdit(card)} className="hover:text-violet-600">
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
                 <button onClick={() => void handleDeleteCard(card.id)} className="hover:text-red-600">
                   <X className="h-4 w-4" />
                 </button>
@@ -173,21 +217,37 @@ export function DeckPage() {
       </div>
 
       <form onSubmit={handleAddCard} className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-sm font-medium text-slate-600">Add a card</p>
-        <input
-          type="text"
-          placeholder="Front"
-          value={front}
-          onChange={(e) => setFront(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-        />
-        <input
-          type="text"
-          placeholder="Back"
-          value={back}
-          onChange={(e) => setBack(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-        />
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-600">Add a card</p>
+          <button
+            type="button"
+            onClick={() => setOcclusionOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-700"
+          >
+            <ScanEye className="h-3.5 w-3.5" />
+            Image-occlusion card
+          </button>
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            type="text"
+            placeholder="Front"
+            value={front}
+            onChange={(e) => setFront(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          />
+          <ImagePicker value={frontImage} onChange={setFrontImage} label="Front photo" />
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            type="text"
+            placeholder="Back"
+            value={back}
+            onChange={(e) => setBack(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+          />
+          <ImagePicker value={backImage} onChange={setBackImage} label="Back photo" />
+        </div>
         <button
           type="submit"
           className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-900"
@@ -202,6 +262,13 @@ export function DeckPage() {
           attachment={{ type: "deck", id: deckId }}
           label={deck.name}
           onClose={() => setSharing(false)}
+        />
+      )}
+      {occlusionOpen && deckId && (
+        <OcclusionCardModal
+          deckId={deckId}
+          onClose={() => setOcclusionOpen(false)}
+          onCreated={handleOcclusionCreated}
         />
       )}
     </AppShell>

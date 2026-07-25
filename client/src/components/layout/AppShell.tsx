@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   GraduationCap,
   LayoutDashboard,
+  Library,
   LogOut,
   Menu,
   Users,
@@ -59,11 +60,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [location.pathname]);
 
-  // Games and Reference are added to the nav as those features ship.
+  // Games is added to the nav when that feature ships.
   const navItems: NavItem[] = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/classes", label: "Classes", icon: BookOpen },
     { to: "/groups", label: "Study Groups", icon: Users, badge: unread },
+    { to: "/reference", label: "Reference", icon: Library },
   ];
 
   const sidebarWidth = collapsed ? "w-[68px]" : "w-60";

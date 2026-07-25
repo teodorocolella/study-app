@@ -14,10 +14,37 @@ export async function listCards(req: Request, res: Response) {
   res.json(cards);
 }
 
-const createSchema = z.object({
-  front: z.string().min(1),
-  back: z.string().min(1),
+// Data-URL image (or null to clear). Cap keeps a card row from bloating.
+const imageField = z
+  .string()
+  .max(1_500_000, "Image is too large")
+  .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
+  .nullable()
+  .optional();
+
+const occlusionSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  label: z.string().max(200),
 });
+
+const createSchema = z
+  .object({
+    front: z.string().max(4000).optional(),
+    back: z.string().max(4000).optional(),
+    frontImage: imageField,
+    backImage: imageField,
+    kind: z.enum(["basic", "image_occlusion"]).default("basic"),
+    occlusions: z.array(occlusionSchema).max(30).optional(),
+  })
+  .refine((d) => d.kind === "image_occlusion" || (d.front?.trim() && d.back?.trim()), {
+    message: "Front and back are required",
+  })
+  .refine((d) => d.kind !== "image_occlusion" || (d.frontImage && d.occlusions?.length), {
+    message: "An image-occlusion card needs an image and at least one hidden region",
+  });
 
 export async function createCard(req: Request, res: Response) {
   const deckId = param(req, "deckId");
@@ -27,8 +54,17 @@ export async function createCard(req: Request, res: Response) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
+  const { front, back, frontImage, backImage, kind, occlusions } = parsed.data;
   const card = await prisma.flashcard.create({
-    data: { ...parsed.data, deckId },
+    data: {
+      deckId,
+      kind,
+      front: front ?? "",
+      back: back ?? (kind === "image_occlusion" ? (occlusions ?? []).map((o) => o.label).join(", ") : ""),
+      frontImage: frontImage ?? null,
+      backImage: backImage ?? null,
+      occlusionsJson: kind === "image_occlusion" && occlusions ? JSON.stringify(occlusions) : null,
+    },
   });
   res.status(201).json(card);
 }
@@ -36,6 +72,8 @@ export async function createCard(req: Request, res: Response) {
 const updateSchema = z.object({
   front: z.string().min(1).optional(),
   back: z.string().min(1).optional(),
+  frontImage: imageField,
+  backImage: imageField,
 });
 
 export async function updateCard(req: Request, res: Response) {

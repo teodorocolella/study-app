@@ -1,3 +1,4 @@
+import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -8,6 +9,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, ExerciseType, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { DrawingModal } from "../components/notes/DrawingModal";
 import { EditorToolbar } from "../components/notes/EditorToolbar";
 import { ShareModal } from "../components/share/ShareModal";
 
@@ -29,6 +31,7 @@ export function NoteEditorPage() {
   const [generating, setGenerating] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [drawingOpen, setDrawingOpen] = useState(false);
   const [quizTypes, setQuizTypes] = useState<ExerciseType[]>([
     "mcq",
     "true_false",
@@ -55,6 +58,7 @@ export function NoteEditorPage() {
     extensions: [
       StarterKit,
       Underline,
+      Image.configure({ inline: false, HTMLAttributes: { class: "rounded-lg max-w-full" } }),
       Placeholder.configure({ placeholder: "Write your notes…" }),
     ],
     content: "",
@@ -288,11 +292,21 @@ export function NoteEditorPage() {
       )}
 
       <div>
-        <EditorToolbar editor={editor} />
+        <EditorToolbar editor={editor} onDraw={() => setDrawingOpen(true)} />
         <div className="rounded-b-xl border border-slate-300 bg-white shadow-sm">
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      {drawingOpen && (
+        <DrawingModal
+          onClose={() => setDrawingOpen(false)}
+          onInsert={(src) => {
+            editor?.chain().focus().setImage({ src }).run();
+            setDrawingOpen(false);
+          }}
+        />
+      )}
 
       {sharing && noteId && (
         <ShareModal

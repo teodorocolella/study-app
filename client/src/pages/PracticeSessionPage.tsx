@@ -13,6 +13,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { api, ApiError } from "../api/client";
 import type { AttemptResult, Exercise, ExerciseSetDetail } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { MathText } from "../components/math/MathText";
 import { EXERCISE_TYPE_LABELS } from "./ExerciseSetPage";
 
 type Phase = "answering" | "grading" | "results";
@@ -124,7 +125,10 @@ export function PracticeSessionPage() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-violet-500">
               {EXERCISE_TYPE_LABELS[current.type]}
             </p>
-            <p className="font-display mb-6 text-xl font-medium text-slate-800">{current.prompt}</p>
+            <MathText
+              className="font-display mb-6 block text-xl font-medium text-slate-800"
+              text={current.prompt}
+            />
             <AnswerInput
               exercise={current}
               value={answers[current.id] ?? ""}

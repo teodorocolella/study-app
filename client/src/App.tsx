@@ -13,6 +13,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MessagesPage } from "./pages/MessagesPage";
 import { NoteEditorPage } from "./pages/NoteEditorPage";
+import { ReferencePage } from "./pages/ReferencePage";
 import { SignupPage } from "./pages/SignupPage";
 import { StudySessionPage } from "./pages/StudySessionPage";
 import { WelcomePage } from "./pages/WelcomePage";
@@ -54,6 +55,7 @@ function App() {
         <Route path="/study" element={protect(<StudySessionPage />)} />
         <Route path="/groups" element={protect(<MessagesPage />)} />
         <Route path="/messages" element={<Navigate to="/groups" replace />} />
+        <Route path="/reference" element={protect(<ReferencePage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

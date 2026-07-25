@@ -143,14 +143,18 @@ model Deck {
 }
 
 model Flashcard {
-  id        String         @id @default(cuid())
-  front     String         @db.Text
-  back      String         @db.Text
-  deckId    String
-  deck      Deck           @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  createdAt DateTime       @default(now())
+  id         String         @id @default(cuid())
+  front      String         @db.Text
+  back       String         @db.Text
+  frontImage String?        @db.Text // optional photo on the front (data URL)
+  backImage  String?        @db.Text // optional photo on the back (data URL)
+  kind       String         @default("basic") // "basic" | "image_occlusion"
+  occlusionsJson String?    @db.Text // image_occlusion: JSON array of {x,y,w,h,label} as % of image
+  deckId     String
+  deck       Deck           @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
 
-  progress  CardProgress[]
+  progress   CardProgress[]
 
   @@index([deckId])
 }

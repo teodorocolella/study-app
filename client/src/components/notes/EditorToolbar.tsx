@@ -6,8 +6,10 @@ import {
   Italic,
   List,
   ListOrdered,
+  Pen,
   Quote,
   Redo,
+  Sigma,
   Strikethrough,
   Underline,
   Undo,
@@ -42,7 +44,13 @@ function ToolbarButton({
   );
 }
 
-export function EditorToolbar({ editor }: { editor: Editor | null }) {
+export function EditorToolbar({
+  editor,
+  onDraw,
+}: {
+  editor: Editor | null;
+  onDraw?: () => void;
+}) {
   if (!editor) return null;
 
   return (
@@ -133,6 +141,18 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       >
         <Redo className="h-4 w-4" />
       </ToolbarButton>
+
+      {onDraw && (
+        <>
+          <div className="mx-1 h-5 w-px bg-slate-300" />
+          <ToolbarButton label="Insert math (type $x^2$)" onClick={() => editor.chain().focus().insertContent("$x^2$").run()}>
+            <Sigma className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton label="Draw a diagram" onClick={onDraw}>
+            <Pen className="h-4 w-4" />
+          </ToolbarButton>
+        </>
+      )}
     </div>
   );
 }

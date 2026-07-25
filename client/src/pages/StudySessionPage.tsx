@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Flashcard } from "../api/types";
+import { CardContent } from "../components/cards/CardContent";
 import { AppShell } from "../components/layout/AppShell";
 
 type GradeLabel = "again" | "hard" | "good" | "easy";
@@ -197,11 +198,16 @@ export function StudySessionPage() {
             onClick={() => !revealed && setRevealed(true)}
             className="animate-flip-in flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-md transition-shadow hover:shadow-lg"
           >
-            <p className="font-display text-xl font-medium text-slate-800">{current.front}</p>
-            {revealed && (
+            {current.kind === "image_occlusion" && revealed ? (
+              // Occlusion cards swap the numbered front for the labeled back on reveal.
+              <CardContent card={current} side="back" />
+            ) : (
+              <CardContent card={current} side="front" />
+            )}
+            {revealed && current.kind !== "image_occlusion" && (
               <>
                 <hr className="my-4 w-24 border-slate-200" />
-                <p className="text-lg text-slate-600">{current.back}</p>
+                <CardContent card={current} side="back" />
               </>
             )}
             {!revealed && (
