@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, type ComponentType } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { InstallHint } from "./components/layout/InstallHint";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { trackPageView } from "./lib/analytics";
@@ -84,6 +85,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <InstallHint />
     </AuthProvider>
   );
 }
