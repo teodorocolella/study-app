@@ -10,6 +10,8 @@ import { DeckPage } from "./pages/DeckPage";
 import { ExerciseSetPage } from "./pages/ExerciseSetPage";
 import { GamePlayPage } from "./pages/GamePlayPage";
 import { GamesPage } from "./pages/GamesPage";
+import { GroupChatPage } from "./pages/GroupChatPage";
+import { GroupsPage } from "./pages/GroupsPage";
 import { PracticeSessionPage } from "./pages/PracticeSessionPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -55,8 +57,10 @@ function App() {
         <Route path="/practice/:setId" element={protect(<ExerciseSetPage />)} />
         <Route path="/practice/:setId/run" element={protect(<PracticeSessionPage />)} />
         <Route path="/study" element={protect(<StudySessionPage />)} />
-        <Route path="/groups" element={protect(<MessagesPage />)} />
-        <Route path="/messages" element={<Navigate to="/groups" replace />} />
+        <Route path="/groups" element={protect(<GroupsPage />)} />
+        <Route path="/groups/:groupId" element={protect(<GroupChatPage />)} />
+        <Route path="/direct" element={protect(<MessagesPage />)} />
+        <Route path="/messages" element={<Navigate to="/direct" replace />} />
         <Route path="/reference" element={protect(<ReferencePage />)} />
         <Route path="/games" element={protect(<GamesPage />)} />
         <Route path="/games/:deckId/:gameId" element={protect(<GamePlayPage />)} />

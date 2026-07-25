@@ -143,6 +143,49 @@ export interface DeckSummary {
   cardCount: number;
 }
 
+export interface GroupSummary {
+  id: string;
+  name: string;
+  memberCount: number;
+  unreadCount: number;
+  lastMessage: {
+    senderName: string;
+    body: string | null;
+    hasAttachment: boolean;
+    createdAt: string;
+  } | null;
+}
+
+export interface GroupMemberDto {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: string;
+}
+
+export interface GroupDetail {
+  id: string;
+  name: string;
+  myRole: string;
+  members: GroupMemberDto[];
+}
+
+export type GroupAttachment =
+  | { type: "note"; title: string; contentHtml: string }
+  | { type: "deck"; name: string; cards: { front: string; back: string }[] }
+  | { type: "exercise_set"; name: string; exercises: unknown[] };
+
+export interface GroupMessageDto {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string | null;
+  body: string | null;
+  attachment: GroupAttachment | null;
+  createdAt: string;
+}
+
 export interface DashboardSummary {
   classes: {
     classId: string;

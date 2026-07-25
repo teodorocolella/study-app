@@ -47,12 +47,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     const load = () =>
-      api
-        .get<{ count: number }>("/messages/unread-count")
-        .then((data) => {
-          if (!cancelled) setUnread(data.count);
-        })
-        .catch(() => {});
+      Promise.all([
+        api.get<{ count: number }>("/messages/unread-count").catch(() => ({ count: 0 })),
+        api.get<{ count: number }>("/groups/unread-count").catch(() => ({ count: 0 })),
+      ]).then(([direct, groups]) => {
+        if (!cancelled) setUnread(direct.count + groups.count);
+      });
     void load();
     const interval = setInterval(load, 60_000);
     return () => {

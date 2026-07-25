@@ -25,6 +25,47 @@ model User {
   sentMessages     Message[]        @relation("SentMessages")
   receivedMessages Message[]        @relation("ReceivedMessages")
   exerciseAttempts ExerciseAttempt[]
+  groupMemberships GroupMember[]
+  groupMessages    GroupMessage[]
+}
+
+// A multi-person study group with a shared chat and shared resources.
+model StudyGroup {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members  GroupMember[]
+  messages GroupMessage[]
+}
+
+model GroupMember {
+  id         String     @id @default(cuid())
+  groupId    String
+  group      StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String     @default("member") // "owner" | "member"
+  lastReadAt DateTime   @default(now())
+  joinedAt   DateTime   @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+// Group chat message; shared notes/decks/quizzes ride along as JSON snapshots.
+model GroupMessage {
+  id             String     @id @default(cuid())
+  groupId        String
+  group          StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String?    @db.Text
+  attachmentType String? // "note" | "deck" | "exercise_set"
+  attachmentJson String?    @db.Text
+  createdAt      DateTime   @default(now())
+
+  @@index([groupId, createdAt])
 }
 
 // Direct messages between students. Shared notes/decks travel as JSON
