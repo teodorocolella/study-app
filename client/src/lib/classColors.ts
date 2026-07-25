@@ -68,3 +68,36 @@ export const CLASS_COLORS: ClassColor[] = [
 export function getClassColor(colorTag: string | null | undefined): ClassColor {
   return CLASS_COLORS.find((c) => c.id === colorTag) ?? CLASS_COLORS[0];
 }
+
+export function isCustomColor(colorTag: string | null | undefined): colorTag is string {
+  return typeof colorTag === "string" && /^#[0-9a-fA-F]{6}$/.test(colorTag);
+}
+
+/** Shifts a hex color lighter (positive) or darker (negative) by a percent. */
+export function shadeHex(hex: string, percent: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = clamp(((n >> 16) & 0xff) * (1 + percent / 100));
+  const g = clamp(((n >> 8) & 0xff) * (1 + percent / 100));
+  const b = clamp((n & 0xff) * (1 + percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
+/**
+ * Gradient classes/style for a class color, supporting both presets (Tailwind
+ * classes) and custom hex colors (inline linear-gradient). Spread both onto the
+ * element: className={`… ${g.className}`} style={g.style}.
+ */
+export function classGradient(
+  colorTag: string | null | undefined,
+  dir: "br" | "b" = "br",
+): { className: string; style?: React.CSSProperties } {
+  if (isCustomColor(colorTag)) {
+    const to = dir === "b" ? "to bottom" : "to bottom right";
+    return {
+      className: "",
+      style: { backgroundImage: `linear-gradient(${to}, ${colorTag}, ${shadeHex(colorTag, -22)})` },
+    };
+  }
+  return { className: `bg-gradient-to-${dir} ${getClassColor(colorTag).gradient}` };
+}

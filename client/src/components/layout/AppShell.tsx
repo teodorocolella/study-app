@@ -19,6 +19,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { applyTheme, type Theme } from "../../lib/theme";
 import { AssistantWidget } from "../ai/AssistantWidget";
 import { Avatar } from "./Avatar";
+import { GradePrompt } from "./GradePrompt";
 import { ProfileModal } from "./ProfileModal";
 import { SearchBox } from "./SearchBox";
 
@@ -38,6 +39,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === "1");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [gradePromptOpen, setGradePromptOpen] = useState(false);
+
+  // Ask for grade if it was never set (e.g. accounts predating the feature).
+  useEffect(() => {
+    if (user && user.gradeLevel == null && sessionStorage.getItem("gradePromptDismissed") !== "1") {
+      setGradePromptOpen(true);
+    }
+  }, [user]);
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.classList.contains("dark") ? "dark" : "light",
   );
@@ -135,6 +144,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <AssistantWidget />
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
+      {gradePromptOpen && (
+        <GradePrompt
+          onClose={() => {
+            sessionStorage.setItem("gradePromptDismissed", "1");
+            setGradePromptOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

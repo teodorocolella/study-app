@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, Deck, ExerciseSetSummary, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
-import { CLASS_COLORS, getClassColor } from "../lib/classColors";
+import { ClassColorPicker } from "../components/layout/ClassColorPicker";
+import { CLASS_COLORS, classGradient } from "../lib/classColors";
 
 export function ClassFolderPage() {
   const { classId } = useParams<{ classId: string }>();
@@ -120,7 +121,7 @@ export function ClassFolderPage() {
     }
   }
 
-  const color = getClassColor(classFolder?.colorTag);
+  const headerGradient = classGradient(classFolder?.colorTag, "br");
 
   return (
     <AppShell>
@@ -142,18 +143,8 @@ export function ClassFolderPage() {
             className="mb-4 w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
           <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Color</label>
-          <div className="mb-4 flex gap-2">
-            {CLASS_COLORS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setEditColor(c.id)}
-                aria-label={c.label}
-                className={`h-7 w-7 rounded-full ${c.dot} transition-transform hover:scale-110 ${
-                  editColor === c.id ? "ring-2 ring-offset-2 ring-slate-400" : ""
-                }`}
-              />
-            ))}
+          <div className="mb-4">
+            <ClassColorPicker value={editColor} onChange={setEditColor} size={7} />
           </div>
           <div className="flex gap-2">
             <button
@@ -174,7 +165,7 @@ export function ClassFolderPage() {
           </div>
         </div>
       ) : (
-        <div className={`mb-8 flex items-center justify-between rounded-2xl bg-gradient-to-br ${color.gradient} p-6 text-white shadow-md`}>
+        <div className={`mb-8 flex items-center justify-between rounded-2xl ${headerGradient.className} p-6 text-white shadow-md`} style={headerGradient.style}>
           <h1 className="font-display text-2xl font-semibold">{classFolder?.name}</h1>
           <div className="flex items-center gap-2">
             <button

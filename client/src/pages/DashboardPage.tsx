@@ -16,7 +16,8 @@ import { api, ApiError } from "../api/client";
 import type { ClassFolder, DashboardSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
-import { CLASS_COLORS, getClassColor } from "../lib/classColors";
+import { ClassColorPicker } from "../components/layout/ClassColorPicker";
+import { CLASS_COLORS, classGradient } from "../lib/classColors";
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -125,14 +126,14 @@ export function DashboardPage() {
           <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">No classes yet — create one below to get started.</p>
         )}
         {summary?.classes.map((c) => {
-          const color = getClassColor(c.colorTag);
+          const g = classGradient(c.colorTag, "b");
           return (
             <Link
               key={c.classId}
               to={`/classes/${c.classId}`}
               className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${color.gradient}`} />
+              <div className={`absolute inset-y-0 left-0 w-1.5 ${g.className}`} style={g.style} />
               <div className="pl-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
@@ -169,18 +170,8 @@ export function DashboardPage() {
         className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm"
       >
         <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Add a new class</p>
-        <div className="mb-3 flex gap-2">
-          {CLASS_COLORS.map((c) => (
-            <button
-              type="button"
-              key={c.id}
-              onClick={() => setSelectedColor(c.id)}
-              aria-label={c.label}
-              className={`h-6 w-6 rounded-full ${c.dot} transition-transform hover:scale-110 ${
-                selectedColor === c.id ? "ring-2 ring-offset-2 ring-slate-400" : ""
-              }`}
-            />
-          ))}
+        <div className="mb-3">
+          <ClassColorPicker value={selectedColor} onChange={setSelectedColor} />
         </div>
         <div className="flex gap-2">
           <input

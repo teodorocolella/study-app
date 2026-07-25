@@ -5,7 +5,7 @@ import { api, ApiError } from "../api/client";
 import type { DeckSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { getBest, type GameId } from "../lib/gameScores";
-import { getClassColor } from "../lib/classColors";
+import { classGradient } from "../lib/classColors";
 
 const GAMES: { id: GameId; name: string; blurb: string; icon: typeof Zap; emoji: string }[] = [
   { id: "match", name: "Match", blurb: "Pair terms to definitions against the clock", icon: Timer, emoji: "🎯" },
@@ -44,7 +44,7 @@ export function GamesPage() {
 
       <div className="mb-8 grid gap-3 sm:grid-cols-2">
         {decks.map((deck) => {
-          const color = getClassColor(deck.colorTag);
+          const g = classGradient(deck.colorTag, "b");
           const active = selected?.id === deck.id;
           return (
             <button
@@ -54,7 +54,7 @@ export function GamesPage() {
                 active ? "border-violet-400 ring-2 ring-violet-200" : "border-slate-200 dark:border-slate-700"
               }`}
             >
-              <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${color.gradient}`} />
+              <div className={`absolute inset-y-0 left-0 w-1.5 ${g.className}`} style={g.style} />
               <div className="pl-2">
                 <p className="font-medium text-slate-700 dark:text-slate-200">{deck.name}</p>
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-400">

@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder } from "../api/types";
 import { useAuth } from "../hooks/useAuth";
+import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { CLASS_COLORS } from "../lib/classColors";
 import { GRADE_OPTIONS } from "../lib/gradeLevels";
 
@@ -165,18 +166,8 @@ export function WelcomePage() {
           <p className="mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400">
             Everything starts with a class folder. What are you studying?
           </p>
-          <div className="mb-3 flex gap-2">
-            {CLASS_COLORS.map((c) => (
-              <button
-                type="button"
-                key={c.id}
-                onClick={() => setSelectedColor(c.id)}
-                aria-label={c.label}
-                className={`h-6 w-6 rounded-full ${c.dot} transition-transform hover:scale-110 ${
-                  selectedColor === c.id ? "ring-2 ring-offset-2 ring-slate-400" : ""
-                }`}
-              />
-            ))}
+          <div className="mb-3">
+            <ClassColorPicker value={selectedColor} onChange={setSelectedColor} />
           </div>
           <div className="flex gap-2">
             <input
