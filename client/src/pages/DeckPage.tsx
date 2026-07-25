@@ -85,7 +85,11 @@ export function DeckPage() {
   }
 
   async function handleDeleteDeck() {
-    if (!deckId || !deck || !confirm("Delete this deck and all its cards?")) return;
+    if (!deckId || !deck) return;
+    const detail = cards.length
+      ? ` This permanently deletes ${cards.length} card${cards.length === 1 ? "" : "s"}.`
+      : "";
+    if (!confirm(`Delete "${deck.name}"?${detail}`)) return;
     await api.delete(`/decks/${deckId}`);
     navigate(`/classes/${deck.classFolderId}`);
   }

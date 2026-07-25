@@ -83,7 +83,14 @@ export function ClassFolderPage() {
   }
 
   async function handleDeleteClass() {
-    if (!classId || !confirm("Delete this class and everything in it?")) return;
+    if (!classId) return;
+    const parts = [
+      notes.length && `${notes.length} note${notes.length === 1 ? "" : "s"}`,
+      decks.length && `${decks.length} deck${decks.length === 1 ? "" : "s"}`,
+      exerciseSets.length && `${exerciseSets.length} quiz${exerciseSets.length === 1 ? "" : "zes"}`,
+    ].filter(Boolean);
+    const detail = parts.length ? ` This permanently deletes ${parts.join(", ")}.` : "";
+    if (!confirm(`Delete "${classFolder?.name ?? "this class"}"?${detail}`)) return;
     await api.delete(`/classes/${classId}`);
     navigate("/dashboard");
   }

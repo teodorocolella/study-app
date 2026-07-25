@@ -50,7 +50,10 @@ export function ExerciseSetPage() {
   }, [setId]);
 
   async function handleDeleteSet() {
-    if (!set || !confirm("Delete this practice set and all its questions?")) return;
+    if (!set) return;
+    const n = set.exercises.length;
+    const detail = n ? ` This permanently deletes ${n} question${n === 1 ? "" : "s"}.` : "";
+    if (!confirm(`Delete "${set.name}"?${detail}`)) return;
     await api.delete(`/exercise-sets/${set.id}`);
     navigate(`/classes/${set.classFolderId}`);
   }
