@@ -22,6 +22,15 @@ import type {
 import { AppShell } from "../components/layout/AppShell";
 import { Avatar } from "../components/layout/Avatar";
 import { useAuth } from "../hooks/useAuth";
+import { useTypingUsers } from "../hooks/useTypingUsers";
+
+type LiveEvent = { type: "message"; message: Message } | { type: "typing"; userId: string; name: string };
+
+const TYPING_THROTTLE_MS = 2000;
+
+function upsertMessage(prev: Message[], msg: Message): Message[] {
+  return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
+}
 
 export function MessagesPage() {
   const { user } = useAuth();
@@ -77,7 +86,7 @@ export function MessagesPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display flex items-center gap-2 text-2xl font-semibold text-slate-800 dark:text-slate-100">
           <MessageSquare className="h-5.5 w-5.5 text-violet-500" />
-          Study Groups
+          Direct messages
         </h1>
         <button
           onClick={() => {
@@ -134,9 +143,10 @@ export function MessagesPage() {
             <ComposePanel onSent={(partner) => void handleSent(partner)} onCancel={() => setComposing(false)} />
           ) : thread ? (
             <ThreadPanel
+              key={thread.partner.id}
               thread={thread}
               myUserId={user?.id ?? ""}
-              onMessageSent={() => void loadThread(thread.partner.id)}
+              onConversationsChanged={() => void loadConversations()}
             />
           ) : (
             <div className="flex h-72 items-center justify-center p-6 text-sm text-slate-400">
@@ -217,20 +227,41 @@ function ComposePanel({
 function ThreadPanel({
   thread,
   myUserId,
-  onMessageSent,
+  onConversationsChanged,
 }: {
   thread: MessageThread;
   myUserId: string;
-  onMessageSent: () => void;
+  onConversationsChanged: () => void;
 }) {
+  const [messages, setMessages] = useState<Message[]>(thread.messages);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastTypingSentRef = useRef(0);
+  const { typing, markTyping } = useTypingUsers();
+
+  // Live updates: new messages and typing for this conversation.
+  useEffect(() => {
+    const close = api.liveStream(`/messages/stream/${thread.partner.id}`, (raw) => {
+      const event = raw as LiveEvent;
+      if (event.type === "message") {
+        setMessages((prev) => upsertMessage(prev, event.message));
+        onConversationsChanged();
+        if (event.message.senderId !== myUserId) {
+          void api.post(`/messages/with/${thread.partner.id}/read`).catch(() => {});
+        }
+      } else if (event.type === "typing" && event.userId !== myUserId) {
+        markTyping(event.userId, event.name);
+      }
+    });
+    return close;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread.partner.id]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [thread.messages.length]);
+  }, [messages.length]);
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
@@ -239,14 +270,24 @@ function ThreadPanel({
     setSending(true);
     setError(null);
     try {
-      await api.post("/messages", { recipientEmail: thread.partner.email, body });
+      const sent = await api.post<Message>("/messages", { recipientEmail: thread.partner.email, body });
+      setMessages((prev) => upsertMessage(prev, sent));
       setInput("");
-      onMessageSent();
+      onConversationsChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to send");
     } finally {
       setSending(false);
     }
+  }
+
+  function handleInputChange(value: string) {
+    setInput(value);
+    if (!value.trim()) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return;
+    lastTypingSentRef.current = now;
+    void api.post("/messages/typing", { recipientId: thread.partner.id }).catch(() => {});
   }
 
   return (
@@ -260,17 +301,21 @@ function ThreadPanel({
       </div>
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
-        {thread.messages.map((m) => (
+        {messages.map((m) => (
           <MessageBubble key={m.id} message={m} mine={m.senderId === myUserId} />
         ))}
       </div>
+
+      {Object.keys(typing).length > 0 && (
+        <p className="px-4 pb-1 text-xs italic text-slate-400">{thread.partner.displayName} is typing…</p>
+      )}
 
       {error && <p className="px-4 text-sm text-red-600">{error}</p>}
       <form onSubmit={handleSend} className="flex gap-2 border-t border-slate-200 dark:border-slate-700 p-3">
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder={`Message ${thread.partner.displayName}…`}
           className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
         />

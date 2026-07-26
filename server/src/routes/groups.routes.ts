@@ -8,7 +8,10 @@ import {
   leaveGroup,
   listGroups,
   listMessages,
+  markGroupRead,
+  postGroupTyping,
   postMessage,
+  streamGroup,
 } from "../controllers/groups.controller.js";
 
 export const groupsRouter = Router();
@@ -22,3 +25,6 @@ groupsRouter.delete("/:groupId/members/me", leaveGroup);
 groupsRouter.get("/:groupId/messages", listMessages);
 groupsRouter.post("/:groupId/messages", postMessage);
 groupsRouter.post("/:groupId/messages/:messageId/import", importAttachment);
+groupsRouter.get("/:groupId/stream", streamGroup);
+groupsRouter.post("/:groupId/typing", postGroupTyping);
+groupsRouter.post("/:groupId/read", markGroupRead);

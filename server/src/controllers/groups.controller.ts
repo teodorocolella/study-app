@@ -1,14 +1,24 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { param } from "../lib/params.js";
+import { openSse } from "../lib/sse.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
+import {
+  groupChannel,
+  isActive,
+  markActive,
+  markInactive,
+  publish,
+  subscribe,
+} from "../services/liveChannel.service.js";
 import {
   getOwnedClassFolder,
   getOwnedDeck,
   getOwnedExerciseSet,
   getOwnedNote,
 } from "../services/ownership.service.js";
+import { notifyOfflineMembers } from "../services/notify.service.js";
 
 const MEMBER_SELECT = { id: true, displayName: true, email: true, avatarUrl: true } as const;
 
@@ -283,7 +293,62 @@ export async function postMessage(req: Request, res: Response) {
     where: { groupId_userId: { groupId, userId: req.userId } },
     data: { lastReadAt: new Date() },
   });
-  res.status(201).json(messageDto(message));
+
+  const dto = messageDto(message);
+  const channel = groupChannel(groupId);
+  publish(channel, { type: "message", message: dto });
+
+  const group = await prisma.studyGroup.findUnique({
+    where: { id: groupId },
+    include: { members: { select: { userId: true } } },
+  });
+  const recipientIds = (group?.members ?? [])
+    .map((m) => m.userId)
+    .filter((id) => id !== req.userId);
+  void notifyOfflineMembers(channel, recipientIds, {
+    title: group?.name ?? "Study group",
+    body: dto.body ?? `${dto.senderName} shared something`,
+    url: `/groups/${groupId}`,
+    tag: channel,
+  });
+
+  res.status(201).json(dto);
+}
+
+export async function streamGroup(req: Request, res: Response) {
+  const groupId = param(req, "groupId");
+  await requireMembership(req.userId, groupId);
+  const channel = groupChannel(groupId);
+
+  const { send, close } = openSse(res);
+  markActive(channel, req.userId);
+  const unsubscribe = subscribe(channel, send);
+
+  req.on("close", () => {
+    unsubscribe();
+    markInactive(channel, req.userId);
+    close();
+  });
+}
+
+// Cheap "mark read" for when a live message arrives while the chat is already
+// open (listMessages only marks read on a fresh GET, which live delivery skips).
+export async function markGroupRead(req: Request, res: Response) {
+  const groupId = param(req, "groupId");
+  await requireMembership(req.userId, groupId);
+  await prisma.groupMember.update({
+    where: { groupId_userId: { groupId, userId: req.userId } },
+    data: { lastReadAt: new Date() },
+  });
+  res.status(204).end();
+}
+
+export async function postGroupTyping(req: Request, res: Response) {
+  const groupId = param(req, "groupId");
+  await requireMembership(req.userId, groupId);
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { displayName: true } });
+  publish(groupChannel(groupId), { type: "typing", userId: req.userId, name: user?.displayName ?? "Someone" });
+  res.status(204).end();
 }
 
 const importSchema = z.object({ classId: z.string() });

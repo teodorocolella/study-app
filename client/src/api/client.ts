@@ -118,6 +118,67 @@ async function streamRequest(
   }
 }
 
+/**
+ * Opens a live GET server-sent-events stream (auth via header, since native
+ * EventSource can't send one) and calls onEvent for each `data: {...}`
+ * payload. Auto-refreshes the access token on a 401 and auto-reconnects if
+ * the connection drops, until the returned close function is called.
+ */
+function liveStream(path: string, onEvent: (event: unknown) => void): () => void {
+  let closed = false;
+  let controller: AbortController | null = null;
+
+  async function connect(retryAuth = true): Promise<void> {
+    if (closed) return;
+    controller = new AbortController();
+    const token = getAccessToken();
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+        signal: controller.signal,
+      });
+
+      if (res.status === 401 && retryAuth) {
+        const refreshed = await tryRefresh();
+        if (refreshed && !closed) return connect(false);
+        return;
+      }
+      if (!res.ok || !res.body) return;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+        for (const chunk of chunks) {
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              onEvent(JSON.parse(line.slice(6)));
+            } catch {
+              // Skip malformed chunks.
+            }
+          }
+        }
+      }
+    } catch {
+      // Aborted (intentional close) or a network blip — reconnect handles the latter.
+    }
+    if (!closed) setTimeout(() => void connect(true), 2000);
+  }
+
+  void connect();
+  return () => {
+    closed = true;
+    controller?.abort();
+  };
+}
+
 // Whether object storage is configured, fetched once and cached.
 let uploadsEnabled: boolean | null = null;
 
@@ -153,4 +214,5 @@ export const api = {
     request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   stream: streamRequest,
+  liveStream,
 };

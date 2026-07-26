@@ -19,6 +19,17 @@ import { ResourcePicker, type PickedResource } from "../components/groups/Resour
 import { AppShell } from "../components/layout/AppShell";
 import { Avatar } from "../components/layout/Avatar";
 import { useAuth } from "../hooks/useAuth";
+import { useTypingUsers } from "../hooks/useTypingUsers";
+
+type LiveEvent =
+  | { type: "message"; message: GroupMessageDto }
+  | { type: "typing"; userId: string; name: string };
+
+const TYPING_THROTTLE_MS = 2000;
+
+function upsertMessage(prev: GroupMessageDto[], msg: GroupMessageDto): GroupMessageDto[] {
+  return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
+}
 
 export function GroupChatPage() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -32,6 +43,8 @@ export function GroupChatPage() {
   const [picking, setPicking] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastTypingSentRef = useRef(0);
+  const { typing, markTyping, reset: resetTyping } = useTypingUsers();
 
   const loadMessages = useCallback(async () => {
     if (!groupId) return;
@@ -51,10 +64,26 @@ export function GroupChatPage() {
 
   useEffect(() => {
     loadMessages().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load messages"));
-    // Light polling so group chat feels live.
-    const t = setInterval(() => void loadMessages().catch(() => {}), 8000);
-    return () => clearInterval(t);
   }, [loadMessages]);
+
+  // Live updates: new messages and typing, pushed instantly instead of polled.
+  useEffect(() => {
+    if (!groupId) return;
+    resetTyping();
+    const close = api.liveStream(`/groups/${groupId}/stream`, (raw) => {
+      const event = raw as LiveEvent;
+      if (event.type === "message") {
+        setMessages((prev) => upsertMessage(prev, event.message));
+        if (event.message.senderId !== user?.id) {
+          void api.post(`/groups/${groupId}/read`).catch(() => {});
+        }
+      } else if (event.type === "typing" && event.userId !== user?.id) {
+        markTyping(event.userId, event.name);
+      }
+    });
+    return close;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -65,14 +94,26 @@ export function GroupChatPage() {
     setSending(true);
     setError(null);
     try {
-      await api.post(`/groups/${groupId}/messages`, { body: body || undefined, attachment });
+      const sent = await api.post<GroupMessageDto>(`/groups/${groupId}/messages`, {
+        body: body || undefined,
+        attachment,
+      });
+      setMessages((prev) => upsertMessage(prev, sent));
       setInput("");
-      await loadMessages();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to send");
     } finally {
       setSending(false);
     }
+  }
+
+  function handleInputChange(value: string) {
+    setInput(value);
+    if (!groupId || !value.trim()) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return;
+    lastTypingSentRef.current = now;
+    void api.post(`/groups/${groupId}/typing`).catch(() => {});
   }
 
   function handleSubmit(e: FormEvent) {
@@ -86,6 +127,8 @@ export function GroupChatPage() {
     await api.delete(`/groups/${groupId}/members/me`);
     navigate("/groups");
   }
+
+  const typingNames = Object.values(typing).map((t) => t.name);
 
   return (
     <AppShell>
@@ -145,6 +188,12 @@ export function GroupChatPage() {
           ))}
         </div>
 
+        {typingNames.length > 0 && (
+          <p className="px-4 pb-1 text-xs italic text-slate-400">
+            {typingNames.join(", ")} {typingNames.length === 1 ? "is" : "are"} typing…
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-slate-200 dark:border-slate-700 p-3">
           <button
             type="button"
@@ -156,7 +205,7 @@ export function GroupChatPage() {
           </button>
           <input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
             placeholder="Message the group…"
             className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
@@ -288,7 +337,7 @@ function GroupAttachmentCard({
           Save to my classes
         </button>
       ) : classes.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Create a class first, then save this.</p>
+        <p className="mt-2 text-xs text-slate-500">Create a class first, then save this.</p>
       ) : (
         <div className="mt-2.5 flex items-center gap-2">
           <select

@@ -1,9 +1,18 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { param } from "../lib/params.js";
+import { openSse } from "../lib/sse.js";
 import { ApiError } from "../middleware/errorHandler.js";
-import { prisma } from "../prisma.js";
+import {
+  dmChannel,
+  markActive,
+  markInactive,
+  publish,
+  subscribe,
+} from "../services/liveChannel.service.js";
+import { notifyOfflineMembers } from "../services/notify.service.js";
 import { getOwnedClassFolder, getOwnedDeck, getOwnedNote } from "../services/ownership.service.js";
+import { prisma } from "../prisma.js";
 
 // Shared notes/decks are stored as self-contained JSON snapshots on the
 // message, so recipients never read (or depend on) the sender's live data.
@@ -114,7 +123,62 @@ export async function postMessage(req: Request, res: Response) {
     },
   });
 
-  res.status(201).json({ ...toDto(message), recipient });
+  const dto = toDto(message);
+  const channel = dmChannel(req.userId, recipient.id);
+  publish(channel, { type: "message", message: dto });
+
+  const sender = await prisma.user.findUnique({ where: { id: req.userId }, select: { displayName: true } });
+  void notifyOfflineMembers(channel, [recipient.id], {
+    title: sender?.displayName ?? "New message",
+    body: dto.body ?? "Shared something with you",
+    url: `/direct?with=${req.userId}`,
+    tag: channel,
+  });
+
+  res.status(201).json({ ...dto, recipient });
+}
+
+export async function streamThread(req: Request, res: Response) {
+  const partnerId = param(req, "userId");
+  const channel = dmChannel(req.userId, partnerId);
+
+  const { send, close } = openSse(res);
+  markActive(channel, req.userId);
+  const unsubscribe = subscribe(channel, send);
+
+  req.on("close", () => {
+    unsubscribe();
+    markInactive(channel, req.userId);
+    close();
+  });
+}
+
+// Cheap "mark read" for when a live message arrives while the thread is already
+// open (getThread only marks read on a fresh GET, which live delivery skips).
+export async function markThreadRead(req: Request, res: Response) {
+  const partnerId = param(req, "userId");
+  await prisma.message.updateMany({
+    where: { senderId: partnerId, recipientId: req.userId, readAt: null },
+    data: { readAt: new Date() },
+  });
+  res.status(204).end();
+}
+
+const typingSchema = z.object({ recipientId: z.string() });
+
+export async function postTyping(req: Request, res: Response) {
+  const parsed = typingSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { displayName: true } });
+  publish(dmChannel(req.userId, parsed.data.recipientId), {
+    type: "typing",
+    userId: req.userId,
+    name: user?.displayName ?? "Someone",
+  });
+  res.status(204).end();
 }
 
 export async function getConversations(req: Request, res: Response) {
