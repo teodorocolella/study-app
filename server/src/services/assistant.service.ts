@@ -449,13 +449,29 @@ export async function runAssistant(
     { role: "user" as const, content: userMessage },
   ];
 
+  // Cached: the system prompt (which embeds the whole workspace snapshot) and
+  // tool definitions are identical across every round of the tool-use loop
+  // below, and often across the next user message too. Marking them as cache
+  // breakpoints means only the first round pays full price — a big latency
+  // win since the snapshot alone can be tens of thousands of characters.
+  const system: Anthropic.TextBlockParam[] = [
+    {
+      type: "text",
+      text: buildSystemPrompt(workspaceContext, pageContext, gradeUser?.gradeLevel),
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  const tools: Anthropic.Tool[] = assistantTools.map((tool, i, arr) =>
+    i === arr.length - 1 ? { ...tool, cache_control: { type: "ephemeral" } } : tool,
+  );
+
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     const stream = client.messages.stream({
       model: MODEL,
       max_tokens: 2048,
       thinking: { type: "disabled" },
-      system: buildSystemPrompt(workspaceContext, pageContext, gradeUser?.gradeLevel),
-      tools: assistantTools,
+      system,
+      tools,
       messages,
     });
 
