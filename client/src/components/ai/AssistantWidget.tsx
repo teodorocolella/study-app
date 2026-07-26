@@ -23,6 +23,7 @@ interface AssistantMessage {
 
 type AssistantEvent =
   | { type: "text"; text: string }
+  | { type: "working"; label: string }
   | { type: "action"; label: string; href?: string }
   | { type: "done" }
   | { type: "error"; message: string };
@@ -63,6 +64,7 @@ export function AssistantWidget() {
   const [messages, setMessages] = useState<AssistantMessage[]>(loadMessages);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -128,8 +130,12 @@ export function AssistantWidget() {
         (raw) => {
           const event = raw as AssistantEvent;
           if (event.type === "text") {
+            setWorking(null);
             appendToReply((last) => ({ ...last, content: last.content + event.text }));
+          } else if (event.type === "working") {
+            setWorking(event.label);
           } else if (event.type === "action") {
+            setWorking(null);
             appendToReply((last) => ({
               ...last,
               actions: [...(last.actions ?? []), { label: event.label, href: event.href }],
@@ -143,6 +149,7 @@ export function AssistantWidget() {
       setError(err instanceof ApiError ? err.message : "Failed to reach the assistant");
     } finally {
       setSending(false);
+      setWorking(null);
       // Drop an empty reply bubble if the request failed before any text arrived.
       setMessages((prev) => {
         const last = prev[prev.length - 1];
@@ -265,11 +272,11 @@ export function AssistantWidget() {
           </div>
         ))}
 
-        {sending && messages[messages.length - 1]?.content === "" && (
+        {sending && (working || messages[messages.length - 1]?.content === "") && (
           <div className="text-left">
             <span className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-700 px-3.5 py-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Thinking…
+              {working ?? "Thinking…"}
             </span>
           </div>
         )}

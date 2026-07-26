@@ -8,9 +8,18 @@ import { getOwnedClassFolder, getOwnedDeck } from "./ownership.service.js";
 // Server-sent events pushed to the widget while the assistant works.
 export type AssistantEvent =
   | { type: "text"; text: string }
+  | { type: "working"; label: string }
   | { type: "action"; label: string; href?: string }
   | { type: "done" }
   | { type: "error"; message: string };
+
+// Shown in the widget the moment Claude starts a tool call — generating the
+// tool input (all the card/quiz contents) is the longest silent stretch.
+const WORKING_LABELS: Record<string, string> = {
+  create_flashcards: "Making your flashcards…",
+  create_exercise_set: "Building your quiz…",
+  create_note: "Writing your note…",
+};
 
 export interface ChatTurn {
   role: "user" | "assistant";
@@ -421,7 +430,9 @@ function buildSystemPrompt(workspaceContext: string, pageContext: string, gradeL
     "- When asked what to study, look at the due counts and recommend the classes and decks with the most cards due.",
     "- When asked for a study plan (especially with a test date, e.g. 'I have a bio test Friday'), build a concrete day-by-day plan using their actual notes, decks, and quizzes for that class: what to review each day, when to take practice quizzes, and how to use spaced repetition in the run-up. Be specific and realistic about time.",
     "- When asked to quiz them, ask one question at a time from their notes or cards, wait for their answer, then give feedback before the next question.",
-    "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note. After a tool call, confirm what you did in one short sentence.",
+    "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note.",
+    "- When the student asks you to make something, call the tool IMMEDIATELY as your very first output — no text before it. Do not say 'Sure!', 'I'd be happy to', or announce what you're about to do; every word before the tool call just makes the student wait longer. Only after the tool result comes back, confirm what you made in one short sentence.",
+    "- Never open a reply with filler agreement or flattery ('Great question!', 'Absolutely!'). Start with the substance.",
     "- Keep answers focused — a short paragraph or two, not an essay. Adapt to what the student seems to already know.",
     NO_MARKDOWN,
   ].join("\n");
@@ -476,6 +487,11 @@ export async function runAssistant(
     });
 
     stream.on("text", (text) => send({ type: "text", text }));
+    stream.on("streamEvent", (event) => {
+      if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+        send({ type: "working", label: WORKING_LABELS[event.content_block.name] ?? "Working on it…" });
+      }
+    });
     const finalMessage = await stream.finalMessage();
     messages.push({ role: "assistant", content: finalMessage.content });
 
