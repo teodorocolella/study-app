@@ -3,7 +3,12 @@ import { z } from "zod";
 import { escapeHtml, stripHtml } from "../lib/html.js";
 import { prisma } from "../prisma.js";
 import { client, gradeInstruction, MODEL, NO_MARKDOWN } from "./claude.service.js";
-import { getOwnedClassFolder, getOwnedDeck } from "./ownership.service.js";
+import {
+  getOwnedClassFolder,
+  getOwnedDeck,
+  getOwnedExerciseSet,
+  getOwnedNote,
+} from "./ownership.service.js";
 
 // Server-sent events pushed to the widget while the assistant works.
 export type AssistantEvent =
@@ -19,6 +24,11 @@ const WORKING_LABELS: Record<string, string> = {
   create_flashcards: "Making your flashcards…",
   create_exercise_set: "Building your quiz…",
   create_note: "Writing your note…",
+  read_note: "Reading your note…",
+  update_note: "Updating your note…",
+  update_flashcards: "Updating your flashcards…",
+  read_exercise_set: "Reading your quiz…",
+  update_exercises: "Updating your quiz…",
 };
 
 export interface ChatTurn {
@@ -120,7 +130,7 @@ export async function buildWorkspaceContext(userId: string): Promise<string> {
       }).length;
       push(`  DECK: "${deck.name}" (deckId: ${deck.id}, ${deck.cards.length} cards, ${dueCount} due for review)`);
       for (const card of deck.cards.slice(0, CARDS_PER_DECK_LIMIT)) {
-        push(`    * ${clip(card.front, CARD_SIDE_CHAR_LIMIT)} -> ${clip(card.back, CARD_SIDE_CHAR_LIMIT)}`);
+        push(`    * [cardId: ${card.id}] ${clip(card.front, CARD_SIDE_CHAR_LIMIT)} -> ${clip(card.back, CARD_SIDE_CHAR_LIMIT)}`);
       }
       if (deck.cards.length > CARDS_PER_DECK_LIMIT) {
         push(`    (…and ${deck.cards.length - CARDS_PER_DECK_LIMIT} more cards)`);
@@ -256,6 +266,111 @@ const assistantTools: Anthropic.Tool[] = [
       required: ["classId", "title", "content"],
     },
   },
+  {
+    name: "read_note",
+    description:
+      "Read the FULL current content of one of the student's notes. Call this before update_note whenever the workspace snapshot shows the note clipped (ends with …) — otherwise you'd rewrite the note from an incomplete view and lose the rest.",
+    input_schema: {
+      type: "object",
+      properties: {
+        noteId: { type: "string", description: "ID of the note to read." },
+      },
+      required: ["noteId"],
+    },
+  },
+  {
+    name: "update_note",
+    description:
+      "Edit an existing note — fix mistakes, rewrite, reorganize, add or remove material, or rename it. content REPLACES the whole note body, so always include everything that should remain, not just the changed part. If the snapshot shows the note clipped (…), call read_note first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        noteId: { type: "string", description: "ID of the note to edit." },
+        title: { type: "string", description: "New title (omit to keep the current one)." },
+        content: {
+          type: "string",
+          description: "Full replacement body as plain text, blank lines between paragraphs (omit to keep the current content).",
+        },
+      },
+      required: ["noteId"],
+    },
+  },
+  {
+    name: "update_flashcards",
+    description:
+      "Edit or delete existing flashcards in a deck, and/or rename the deck. Use the cardId values shown in the workspace snapshot. For each edit, only the fields you pass change.",
+    input_schema: {
+      type: "object",
+      properties: {
+        deckId: { type: "string", description: "ID of the deck the cards belong to." },
+        renameTo: { type: "string", description: "New name for the deck (omit to keep it)." },
+        edits: {
+          type: "array",
+          description: "Cards to change.",
+          items: {
+            type: "object",
+            properties: {
+              cardId: { type: "string" },
+              front: { type: "string", description: "New front text (omit to keep)." },
+              back: { type: "string", description: "New back text (omit to keep)." },
+            },
+            required: ["cardId"],
+          },
+        },
+        deleteCardIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Cards to delete entirely.",
+        },
+      },
+      required: ["deckId"],
+    },
+  },
+  {
+    name: "read_exercise_set",
+    description:
+      "Read the full questions of one of the student's practice quizzes (the workspace snapshot only shows quiz names, not their questions). ALWAYS call this before update_exercises so you can see the exerciseId values and current content.",
+    input_schema: {
+      type: "object",
+      properties: {
+        setId: { type: "string", description: "ID of the practice set to read." },
+      },
+      required: ["setId"],
+    },
+  },
+  {
+    name: "update_exercises",
+    description:
+      "Edit or delete questions in an existing practice quiz, and/or rename it. Call read_exercise_set first to get exerciseId values and current content. For each edit, only the fields you pass change; for mcq questions the final answer must exactly match one of the final options.",
+    input_schema: {
+      type: "object",
+      properties: {
+        setId: { type: "string", description: "ID of the practice set." },
+        renameTo: { type: "string", description: "New name for the quiz (omit to keep it)." },
+        edits: {
+          type: "array",
+          description: "Questions to change.",
+          items: {
+            type: "object",
+            properties: {
+              exerciseId: { type: "string" },
+              prompt: { type: "string" },
+              options: { type: "array", items: { type: "string" }, description: "mcq only: full replacement options." },
+              answer: { type: "string" },
+              explanation: { type: "string" },
+            },
+            required: ["exerciseId"],
+          },
+        },
+        deleteExerciseIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Questions to delete entirely.",
+        },
+      },
+      required: ["setId"],
+    },
+  },
 ];
 
 const createFlashcardsInput = z.object({
@@ -290,6 +405,66 @@ const createExerciseSetInput = z.object({
     .min(1)
     .max(25),
 });
+
+const readNoteInput = z.object({ noteId: z.string() });
+
+const updateNoteInput = z
+  .object({
+    noteId: z.string(),
+    title: z.string().min(1).max(200).optional(),
+    content: z.string().min(1).max(40000).optional(),
+  })
+  .refine((d) => d.title !== undefined || d.content !== undefined, {
+    message: "Pass a new title, new content, or both",
+  });
+
+const updateFlashcardsInput = z
+  .object({
+    deckId: z.string(),
+    renameTo: z.string().min(1).max(120).optional(),
+    edits: z
+      .array(
+        z
+          .object({
+            cardId: z.string(),
+            front: z.string().min(1).max(2000).optional(),
+            back: z.string().min(1).max(2000).optional(),
+          })
+          .refine((e) => e.front !== undefined || e.back !== undefined, {
+            message: "Each edit needs a new front, back, or both",
+          }),
+      )
+      .max(40)
+      .optional(),
+    deleteCardIds: z.array(z.string()).max(40).optional(),
+  })
+  .refine((d) => d.renameTo !== undefined || d.edits?.length || d.deleteCardIds?.length, {
+    message: "Pass renameTo, edits, or deleteCardIds",
+  });
+
+const readExerciseSetInput = z.object({ setId: z.string() });
+
+const updateExercisesInput = z
+  .object({
+    setId: z.string(),
+    renameTo: z.string().min(1).max(120).optional(),
+    edits: z
+      .array(
+        z.object({
+          exerciseId: z.string(),
+          prompt: z.string().min(1).max(2000).optional(),
+          options: z.array(z.string().min(1).max(500)).min(2).max(6).optional(),
+          answer: z.string().min(1).max(4000).optional(),
+          explanation: z.string().max(4000).optional(),
+        }),
+      )
+      .max(25)
+      .optional(),
+    deleteExerciseIds: z.array(z.string()).max(25).optional(),
+  })
+  .refine((d) => d.renameTo !== undefined || d.edits?.length || d.deleteExerciseIds?.length, {
+    message: "Pass renameTo, edits, or deleteExerciseIds",
+  });
 
 function plainTextToHtml(text: string) {
   return text
@@ -409,6 +584,180 @@ async function executeAssistantTool(
     return { result: `Created the note "${title}" in the class "${cf.name}". Confirm briefly.` };
   }
 
+  if (toolName === "read_note") {
+    const parsed = readNoteInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a noteId.", isError: true };
+    const note = await getOwnedNote(userId, parsed.data.noteId).catch(() => null);
+    if (!note) return { result: `No note with id ${parsed.data.noteId} exists for this student.`, isError: true };
+    return { result: `Title: ${note.title}\n\n${stripHtml(note.contentHtml) || "(empty note)"}` };
+  }
+
+  if (toolName === "update_note") {
+    const parsed = updateNoteInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const { noteId, title, content } = parsed.data;
+    const note = await getOwnedNote(userId, noteId).catch(() => null);
+    if (!note) return { result: `No note with id ${noteId} exists for this student.`, isError: true };
+
+    const updated = await prisma.note.update({
+      where: { id: note.id },
+      data: {
+        ...(title !== undefined ? { title } : {}),
+        // Replacing the content invalidates any AI summary of the old version.
+        ...(content !== undefined ? { contentHtml: plainTextToHtml(content), aiSummary: null } : {}),
+      },
+    });
+
+    send({
+      type: "action",
+      label: `Updated note "${updated.title}"`,
+      href: `/classes/${note.classFolderId}/notes/${note.id}`,
+    });
+    return { result: `Updated the note "${updated.title}". Confirm briefly what you changed.` };
+  }
+
+  if (toolName === "update_flashcards") {
+    const parsed = updateFlashcardsInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const { deckId, renameTo, edits = [], deleteCardIds = [] } = parsed.data;
+    const deck = await getOwnedDeck(userId, deckId).catch(() => null);
+    if (!deck) return { result: `No deck with id ${deckId} exists for this student.`, isError: true };
+
+    // Every referenced card must belong to this deck.
+    const referencedIds = [...new Set([...edits.map((e) => e.cardId), ...deleteCardIds])];
+    const owned = await prisma.flashcard.findMany({
+      where: { id: { in: referencedIds }, deckId: deck.id },
+      select: { id: true },
+    });
+    const ownedIds = new Set(owned.map((c) => c.id));
+    const missing = referencedIds.filter((id) => !ownedIds.has(id));
+    if (missing.length > 0) {
+      return { result: `These cardIds are not in that deck: ${missing.join(", ")}. Use the cardId values from the snapshot.`, isError: true };
+    }
+
+    await prisma.$transaction([
+      ...(renameTo !== undefined
+        ? [prisma.deck.update({ where: { id: deck.id }, data: { name: renameTo } })]
+        : []),
+      ...edits.map((e) =>
+        prisma.flashcard.update({
+          where: { id: e.cardId },
+          data: {
+            ...(e.front !== undefined ? { front: e.front } : {}),
+            ...(e.back !== undefined ? { back: e.back } : {}),
+          },
+        }),
+      ),
+      ...(deleteCardIds.length > 0
+        ? [prisma.flashcard.deleteMany({ where: { id: { in: deleteCardIds } } })]
+        : []),
+    ]);
+
+    const parts = [
+      edits.length && `updated ${edits.length} card${edits.length === 1 ? "" : "s"}`,
+      deleteCardIds.length && `deleted ${deleteCardIds.length}`,
+      renameTo !== undefined && "renamed the deck",
+    ].filter(Boolean);
+    send({
+      type: "action",
+      label: `${parts.join(", ")} in "${renameTo ?? deck.name}"`.replace(/^./, (c) => c.toUpperCase()),
+      href: `/decks/${deck.id}`,
+    });
+    return { result: `Done: ${parts.join(", ")} in the deck "${renameTo ?? deck.name}". Confirm briefly.` };
+  }
+
+  if (toolName === "read_exercise_set") {
+    const parsed = readExerciseSetInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a setId.", isError: true };
+    const set = await getOwnedExerciseSet(userId, parsed.data.setId).catch(() => null);
+    if (!set) return { result: `No practice set with id ${parsed.data.setId} exists for this student.`, isError: true };
+
+    const exercises = await prisma.exercise.findMany({
+      where: { setId: set.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    });
+    const lines = exercises.map((e, i) => {
+      const options = e.optionsJson ? ` | options: ${JSON.parse(e.optionsJson).join(" / ")}` : "";
+      const explanation = e.explanation ? ` | explanation: ${e.explanation}` : "";
+      return `${i + 1}. [exerciseId: ${e.id}] (${e.type}) ${e.prompt}${options} | answer: ${e.answer}${explanation}`;
+    });
+    return { result: `Quiz "${set.name}" (${exercises.length} questions):\n${lines.join("\n")}` };
+  }
+
+  if (toolName === "update_exercises") {
+    const parsed = updateExercisesInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const { setId, renameTo, edits = [], deleteExerciseIds = [] } = parsed.data;
+    const set = await getOwnedExerciseSet(userId, setId).catch(() => null);
+    if (!set) return { result: `No practice set with id ${setId} exists for this student.`, isError: true };
+
+    const referencedIds = [...new Set([...edits.map((e) => e.exerciseId), ...deleteExerciseIds])];
+    const owned = await prisma.exercise.findMany({
+      where: { id: { in: referencedIds }, setId: set.id },
+    });
+    const byId = new Map(owned.map((e) => [e.id, e]));
+    const missing = referencedIds.filter((id) => !byId.has(id));
+    if (missing.length > 0) {
+      return { result: `These exerciseIds are not in that quiz: ${missing.join(", ")}. Call read_exercise_set to get the right ids.`, isError: true };
+    }
+
+    // Merge each edit onto the current question and re-validate mcq consistency.
+    for (const edit of edits) {
+      const current = byId.get(edit.exerciseId)!;
+      if (current.type === "mcq") {
+        const finalOptions = edit.options ?? (current.optionsJson ? (JSON.parse(current.optionsJson) as string[]) : []);
+        const finalAnswer = edit.answer ?? current.answer;
+        if (!finalOptions.includes(finalAnswer)) {
+          return {
+            result: `For exercise ${edit.exerciseId} (mcq), the final answer "${finalAnswer}" must exactly match one of the final options. Fix and retry.`,
+            isError: true,
+          };
+        }
+      }
+    }
+
+    await prisma.$transaction([
+      ...(renameTo !== undefined
+        ? [prisma.exerciseSet.update({ where: { id: set.id }, data: { name: renameTo } })]
+        : []),
+      ...edits.map((e) => {
+        const current = byId.get(e.exerciseId)!;
+        return prisma.exercise.update({
+          where: { id: e.exerciseId },
+          data: {
+            ...(e.prompt !== undefined ? { prompt: e.prompt } : {}),
+            ...(e.options !== undefined ? { optionsJson: JSON.stringify(e.options) } : {}),
+            ...(e.answer !== undefined
+              ? { answer: current.type === "true_false" ? e.answer.toLowerCase() : e.answer }
+              : {}),
+            ...(e.explanation !== undefined ? { explanation: e.explanation } : {}),
+          },
+        });
+      }),
+      ...(deleteExerciseIds.length > 0
+        ? [prisma.exercise.deleteMany({ where: { id: { in: deleteExerciseIds } } })]
+        : []),
+    ]);
+
+    const parts = [
+      edits.length && `updated ${edits.length} question${edits.length === 1 ? "" : "s"}`,
+      deleteExerciseIds.length && `deleted ${deleteExerciseIds.length}`,
+      renameTo !== undefined && "renamed the quiz",
+    ].filter(Boolean);
+    send({
+      type: "action",
+      label: `${parts.join(", ")} in "${renameTo ?? set.name}"`.replace(/^./, (c) => c.toUpperCase()),
+      href: `/practice/${set.id}`,
+    });
+    return { result: `Done: ${parts.join(", ")} in the quiz "${renameTo ?? set.name}". Confirm briefly.` };
+  }
+
   return { result: `Unknown tool: ${toolName}`, isError: true };
 }
 
@@ -431,6 +780,7 @@ function buildSystemPrompt(workspaceContext: string, pageContext: string, gradeL
     "- When asked for a study plan (especially with a test date, e.g. 'I have a bio test Friday'), build a concrete day-by-day plan using their actual notes, decks, and quizzes for that class: what to review each day, when to take practice quizzes, and how to use spaced repetition in the run-up. Be specific and realistic about time.",
     "- When asked to quiz them, ask one question at a time from their notes or cards, wait for their answer, then give feedback before the next question.",
     "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note.",
+    "- You can also EDIT existing content when asked to fix, change, reword, expand, or delete something: update_note for notes (call read_note first if the snapshot shows the note clipped with …), update_flashcards for cards in a deck (cardId values are in the snapshot), and update_exercises for quiz questions (ALWAYS call read_exercise_set first — the snapshot doesn't include quiz questions). Prefer editing the existing item over creating a duplicate.",
     "- When the student asks you to make something, call the tool IMMEDIATELY as your very first output — no text before it. Do not say 'Sure!', 'I'd be happy to', or announce what you're about to do; every word before the tool call just makes the student wait longer. Only after the tool result comes back, confirm what you made in one short sentence.",
     "- Never open a reply with filler agreement or flattery ('Great question!', 'Absolutely!'). Start with the substance.",
     "- Keep answers focused — a short paragraph or two, not an essay. Adapt to what the student seems to already know.",
