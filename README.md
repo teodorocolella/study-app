@@ -26,7 +26,9 @@ an AI tutor powered by the Claude API — built for middle school through high s
 - **Guided onboarding** — new accounts get an integrated welcome tour that ends by
   creating their first class
 - **Messaging & sharing** — message classmates by email and share copies of notes and
-  flashcard decks; recipients save them into their own classes
+  flashcard decks; recipients save them into their own classes. Direct messages and study-group
+  chat are live (server-sent events) — messages and typing indicators appear instantly, no
+  refresh — and both support optional push notifications for new messages when the app isn't open
 - **Email reminders** — an optional daily email nudge when cards are due and you haven't
   studied yet (any SMTP provider)
 - **Dashboard** — see what's due for review today across every class, plus study streaks
@@ -114,6 +116,7 @@ Visit `http://localhost:5173` and sign up for an account.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. Enables "Continue with Google". Redirect URI: `<APP_URL>/api/auth/oauth/google/callback`. |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Optional. Enables "Continue with Microsoft". Redirect URI: `<APP_URL>/api/auth/oauth/microsoft/callback`. |
 | `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_PUBLIC_URL` / `S3_ENDPOINT` | Optional. S3-compatible object storage (Cloudflare R2, AWS S3) for image uploads. When unset, images are stored inline as data URLs. |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Optional. Enables push notifications for new messages. Generate with `npx web-push generate-vapid-keys`. |
 | `VITE_GA_MEASUREMENT_ID` | Optional. Google Analytics 4 Measurement ID (`G-XXXXXXXXXX`). Leave unset to disable analytics. Vite bakes this into the build at build time, so it must be set on Render's Web Service *before* the build runs — not just at runtime. |
 
 ## Deployment (Render)

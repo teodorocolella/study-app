@@ -34,6 +34,12 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_PUBLIC_URL: z.string().optional(), // public base URL for stored objects
+
+  // Web Push notifications (optional). Enabled when both VAPID keys are set.
+  // Generate a pair with: npx web-push generate-vapid-keys
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default("mailto:support@studyhub.app"),
 });
 
 export const env = envSchema.parse(process.env);

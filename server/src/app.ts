@@ -14,6 +14,7 @@ import { groupsRouter } from "./routes/groups.routes.js";
 import { listShareableResources } from "./controllers/resources.controller.js";
 import { search } from "./controllers/search.controller.js";
 import { getUploadStatus, postUpload } from "./controllers/uploads.controller.js";
+import { pushRouter } from "./routes/push.routes.js";
 import {
   exerciseSetsNestedRouter,
   exerciseSetsRouter,
@@ -69,6 +70,7 @@ export function createApp() {
   app.get("/api/search", requireAuth, search);
   app.get("/api/uploads/status", requireAuth, getUploadStatus);
   app.post("/api/uploads", requireAuth, postUpload);
+  app.use("/api/push", requireAuth, pushRouter);
   app.use("/api/ai", requireAuth, aiRateLimiter, aiRouter);
 
   if (env.NODE_ENV === "production") {

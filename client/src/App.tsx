@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, type ComponentType } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { InstallHint } from "./components/layout/InstallHint";
 import { RequireAuth } from "./components/layout/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
@@ -45,6 +45,25 @@ function AnalyticsTracker() {
   return null;
 }
 
+// Routes to the right page when a push notification is clicked while the app
+// is already open (the service worker focuses the tab and posts this message).
+function PushNavigator() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    function onMessage(event: MessageEvent) {
+      if (event.data?.type === "navigate" && typeof event.data.url === "string") {
+        navigate(event.data.url);
+      }
+    }
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [navigate]);
+
+  return null;
+}
+
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center text-slate-400 dark:text-slate-500">
@@ -57,6 +76,7 @@ function App() {
   return (
     <AuthProvider>
       <AnalyticsTracker />
+      <PushNavigator />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />

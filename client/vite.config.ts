@@ -9,6 +9,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // Custom service worker (src/sw.ts) so we can handle Web Push + click
+      // routing alongside the usual offline app-shell caching.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectRegister: 'auto',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
@@ -24,24 +30,9 @@ export default defineConfig({
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        // Precache the app shell; fall back to it for SPA routes when offline.
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/],
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            // Notes, classes, decks stay readable offline after a first view.
-            urlPattern: /\/api\/(notes|classes|decks)\/.*/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'study-hub-api',
-              networkTimeoutSeconds: 4,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
-          },
-        ],
       },
     }),
   ],

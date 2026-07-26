@@ -1,9 +1,16 @@
-import { Camera, Loader2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { Bell, BellOff, Camera, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { ApiError } from "../../api/client";
 import { resizeImageToDataUrl } from "../../lib/imageResize";
 import { GRADE_OPTIONS } from "../../lib/gradeLevels";
+import {
+  getExistingSubscription,
+  getPushConfig,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../../lib/push";
 import { Avatar } from "./Avatar";
 
 export function ProfileModal({ onClose }: { onClose: () => void }) {
@@ -14,6 +21,39 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const [gradeLevel, setGradeLevel] = useState<number | null>(user?.gradeLevel ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [pushAvailable, setPushAvailable] = useState(false);
+  const [pushPublicKey, setPushPublicKey] = useState<string | null>(null);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isPushSupported()) return;
+    Promise.all([getPushConfig(), getExistingSubscription()])
+      .then(([config, existing]) => {
+        if (config.enabled && config.publicKey) {
+          setPushAvailable(true);
+          setPushPublicKey(config.publicKey);
+          setPushOn(!!existing);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function toggleNotifications() {
+    setPushBusy(true);
+    try {
+      if (pushOn) {
+        await unsubscribeFromPush();
+        setPushOn(false);
+      } else if (pushPublicKey) {
+        const ok = await subscribeToPush(pushPublicKey);
+        setPushOn(ok);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -99,6 +139,31 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
         <p className="mb-4 text-xs text-slate-400">
           Used only to tailor your recommendations. Advances automatically each school year.
         </p>
+
+        {pushAvailable && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+            <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              {pushOn ? <Bell className="h-4 w-4 text-violet-500" /> : <BellOff className="h-4 w-4 text-slate-400" />}
+              Message notifications
+            </span>
+            <button
+              type="button"
+              onClick={() => void toggleNotifications()}
+              disabled={pushBusy}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                pushOn ? "bg-violet-600" : "bg-slate-300 dark:bg-slate-600"
+              }`}
+              aria-pressed={pushOn}
+              aria-label="Toggle message notifications"
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  pushOn ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+        )}
 
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 

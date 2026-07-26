@@ -27,6 +27,21 @@ model User {
   exerciseAttempts ExerciseAttempt[]
   groupMemberships GroupMember[]
   groupMessages    GroupMessage[]
+  pushSubscriptions PushSubscription[]
+}
+
+// A registered browser/device push endpoint (Web Push). One row per
+// browser/device the user has enabled notifications on.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // A multi-person study group with a shared chat and shared resources.

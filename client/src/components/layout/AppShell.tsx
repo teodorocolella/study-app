@@ -20,6 +20,7 @@ import { applyTheme, type Theme } from "../../lib/theme";
 import { AssistantWidget } from "../ai/AssistantWidget";
 import { Avatar } from "./Avatar";
 import { GradePrompt } from "./GradePrompt";
+import { NotificationsPrompt } from "./NotificationsPrompt";
 import { ProfileModal } from "./ProfileModal";
 import { SearchBox } from "./SearchBox";
 
@@ -143,6 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <AssistantWidget />
+      <NotificationsPrompt />
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
       {gradePromptOpen && (
         <GradePrompt
