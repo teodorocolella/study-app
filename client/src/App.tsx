@@ -19,6 +19,7 @@ const WelcomePage = page(() => import("./pages/WelcomePage"), "WelcomePage");
 const DashboardPage = page(() => import("./pages/DashboardPage"), "DashboardPage");
 const ClassesPage = page(() => import("./pages/ClassesPage"), "ClassesPage");
 const ClassFolderPage = page(() => import("./pages/ClassFolderPage"), "ClassFolderPage");
+const FolderPage = page(() => import("./pages/FolderPage"), "FolderPage");
 const NoteEditorPage = page(() => import("./pages/NoteEditorPage"), "NoteEditorPage");
 const DeckPage = page(() => import("./pages/DeckPage"), "DeckPage");
 const ExerciseSetPage = page(() => import("./pages/ExerciseSetPage"), "ExerciseSetPage");
@@ -86,6 +87,7 @@ function App() {
           <Route path="/dashboard" element={protect(<DashboardPage />)} />
           <Route path="/classes" element={protect(<ClassesPage />)} />
           <Route path="/classes/:classId" element={protect(<ClassFolderPage />)} />
+          <Route path="/classes/:classId/folders/:folderId" element={protect(<FolderPage />)} />
           <Route
             path="/classes/:classId/notes/:noteId"
             element={protect(<NoteEditorPage />)}

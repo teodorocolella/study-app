@@ -6,12 +6,25 @@ export interface ClassFolder {
   createdAt: string;
 }
 
+export interface Folder {
+  id: string;
+  name: string;
+  classFolderId: string;
+}
+
+export interface FolderSummary extends Folder {
+  noteCount: number;
+  deckCount: number;
+  quizCount: number;
+}
+
 export interface Note {
   id: string;
   title: string;
   contentHtml: string;
   aiSummary: string | null;
   classFolderId: string;
+  folderId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +33,7 @@ export interface Deck {
   id: string;
   name: string;
   classFolderId: string;
+  folderId: string | null;
   createdAt: string;
   _count: { cards: number };
 }
@@ -65,6 +79,8 @@ export interface ExerciseSetSummary {
   exerciseCount: number;
   lastAttempt: { score: number; total: number; createdAt: string } | null;
 }
+
+export type MovableType = "note" | "deck" | "quiz";
 
 export interface ExerciseSetDetail {
   id: string;

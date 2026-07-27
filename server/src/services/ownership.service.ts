@@ -9,6 +9,17 @@ export async function getOwnedClassFolder(userId: string, classId: string) {
   return classFolder;
 }
 
+export async function getOwnedFolder(userId: string, folderId: string) {
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    include: { classFolder: true },
+  });
+  if (!folder || folder.classFolder.userId !== userId) {
+    throw new ApiError(404, "Folder not found");
+  }
+  return folder;
+}
+
 export async function getOwnedNote(userId: string, noteId: string) {
   const note = await prisma.note.findUnique({
     where: { id: noteId },

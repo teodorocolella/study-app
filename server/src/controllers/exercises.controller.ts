@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { fuzzyAnswerMatch } from "../lib/grading.js";
-import { param } from "../lib/params.js";
+import { folderFilter, param } from "../lib/params.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import {
@@ -10,7 +10,12 @@ import {
   gradeShortAnswers,
   type ShortAnswerSubmission,
 } from "../services/claude.service.js";
-import { getOwnedClassFolder, getOwnedExercise, getOwnedExerciseSet } from "../services/ownership.service.js";
+import {
+  getOwnedClassFolder,
+  getOwnedExercise,
+  getOwnedExerciseSet,
+  getOwnedFolder,
+} from "../services/ownership.service.js";
 
 function parseOptions(optionsJson: string | null): string[] | null {
   if (!optionsJson) return null;
@@ -50,7 +55,7 @@ export async function listExerciseSets(req: Request, res: Response) {
   await getOwnedClassFolder(req.userId, classId);
 
   const sets = await prisma.exerciseSet.findMany({
-    where: { classFolderId: classId },
+    where: { classFolderId: classId, ...folderFilter(req) },
     orderBy: { createdAt: "asc" },
     include: {
       _count: { select: { exercises: true } },
@@ -75,7 +80,17 @@ export async function listExerciseSets(req: Request, res: Response) {
   );
 }
 
-const createSetSchema = z.object({ name: z.string().min(1).max(120) });
+const createSetSchema = z.object({
+  name: z.string().min(1).max(120),
+  folderId: z.string().nullish(),
+});
+
+async function assertFolderInClass(userId: string, folderId: string, classId: string) {
+  const folder = await getOwnedFolder(userId, folderId);
+  if (folder.classFolderId !== classId) {
+    throw new ApiError(400, "That folder belongs to a different class");
+  }
+}
 
 export async function createExerciseSet(req: Request, res: Response) {
   const classId = param(req, "classId");
@@ -86,8 +101,9 @@ export async function createExerciseSet(req: Request, res: Response) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
+  if (parsed.data.folderId) await assertFolderInClass(req.userId, parsed.data.folderId, classId);
   const set = await prisma.exerciseSet.create({
-    data: { name: parsed.data.name, classFolderId: classId },
+    data: { name: parsed.data.name, classFolderId: classId, folderId: parsed.data.folderId ?? null },
   });
   res.status(201).json(set);
 }
@@ -119,18 +135,26 @@ export async function getExerciseSet(req: Request, res: Response) {
   });
 }
 
+const updateSetSchema = z.object({
+  name: z.string().min(1).max(120).optional(),
+  folderId: z.string().nullish(),
+});
+
 export async function updateExerciseSet(req: Request, res: Response) {
   const setId = param(req, "setId");
-  await getOwnedExerciseSet(req.userId, setId);
+  const existing = await getOwnedExerciseSet(req.userId, setId);
 
-  const parsed = createSetSchema.safeParse(req.body);
+  const parsed = updateSetSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
+  if (parsed.data.folderId) {
+    await assertFolderInClass(req.userId, parsed.data.folderId, existing.classFolderId);
+  }
   const set = await prisma.exerciseSet.update({
     where: { id: setId },
-    data: { name: parsed.data.name },
+    data: parsed.data,
   });
   res.json(set);
 }

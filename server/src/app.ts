@@ -21,6 +21,7 @@ import {
   exercisesRouter,
 } from "./routes/exercises.routes.js";
 import { classFoldersRouter } from "./routes/classFolders.routes.js";
+import { foldersNestedRouter, foldersRouter } from "./routes/folders.routes.js";
 import { notesNestedRouter, notesRouter } from "./routes/notes.routes.js";
 import { decksNestedRouter, decksRouter } from "./routes/decks.routes.js";
 import { cardsNestedRouter, cardsRouter } from "./routes/cards.routes.js";
@@ -53,8 +54,10 @@ export function createApp() {
   app.use("/api/classes/:classId/notes", requireAuth, notesNestedRouter);
   app.use("/api/classes/:classId/decks", requireAuth, decksNestedRouter);
   app.use("/api/classes/:classId/exercise-sets", requireAuth, exerciseSetsNestedRouter);
+  app.use("/api/classes/:classId/folders", requireAuth, foldersNestedRouter);
   app.use("/api/exercise-sets", requireAuth, exerciseSetsRouter);
   app.use("/api/exercises", requireAuth, exercisesRouter);
+  app.use("/api/folders", requireAuth, foldersRouter);
   app.use("/api/classes", requireAuth, classFoldersRouter);
   app.use("/api/notes", requireAuth, notesRouter);
   app.use("/api/decks/:deckId/cards", requireAuth, cardsNestedRouter);

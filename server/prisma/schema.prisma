@@ -124,8 +124,25 @@ model ClassFolder {
   notes        Note[]
   decks        Deck[]
   exerciseSets ExerciseSet[]
+  folders      Folder[]
 
   @@index([userId])
+}
+
+// An optional grouping inside a class. Notes, decks, and quizzes can live at
+// the class root (folderId null) or be filed into a folder.
+model Folder {
+  id            String      @id @default(cuid())
+  name          String
+  classFolderId String
+  classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  notes        Note[]
+  decks        Deck[]
+  exerciseSets ExerciseSet[]
+
+  @@index([classFolderId])
 }
 
 // A practice quiz: a mixed bag of exercises (MCQ, true/false,
@@ -135,12 +152,15 @@ model ExerciseSet {
   name          String
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  folderId      String?
+  folder        Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())
 
   exercises Exercise[]
   attempts  ExerciseAttempt[]
 
   @@index([classFolderId])
+  @@index([folderId])
 }
 
 model Exercise {
@@ -180,10 +200,13 @@ model Note {
   aiSummary     String?     @db.Text
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  folderId      String?
+  folder        Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([classFolderId])
+  @@index([folderId])
 }
 
 model Deck {
@@ -191,11 +214,14 @@ model Deck {
   name          String
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
+  folderId      String?
+  folder        Folder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())
 
   cards         Flashcard[]
 
   @@index([classFolderId])
+  @@index([folderId])
 }
 
 model Flashcard {
