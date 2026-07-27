@@ -29,6 +29,12 @@ const WORKING_LABELS: Record<string, string> = {
   update_flashcards: "Updating your flashcards…",
   read_exercise_set: "Reading your quiz…",
   update_exercises: "Updating your quiz…",
+  add_exercises: "Adding questions…",
+  create_class: "Creating your class…",
+  delete_note: "Deleting the note…",
+  delete_deck: "Deleting the deck…",
+  delete_exercise_set: "Deleting the quiz…",
+  delete_class: "Deleting the class…",
 };
 
 export interface ChatTurn {
@@ -371,6 +377,88 @@ const assistantTools: Anthropic.Tool[] = [
       required: ["setId"],
     },
   },
+  {
+    name: "add_exercises",
+    description:
+      "Add new questions to an EXISTING practice quiz (use the setId from the snapshot). Same question rules as create_exercise_set (mcq needs 4 options with the answer copied exactly; true_false answer is 'true'/'false'; fill_blank uses '_____'; short_answer has a model answer). Use this instead of create_exercise_set when the student wants more questions on a quiz they already have.",
+    input_schema: {
+      type: "object",
+      properties: {
+        setId: { type: "string", description: "ID of the existing quiz to add questions to." },
+        exercises: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: ["mcq", "true_false", "fill_blank", "short_answer"] },
+              prompt: { type: "string" },
+              options: { type: "array", items: { type: "string" }, description: "mcq only: exactly 4 choices." },
+              answer: { type: "string" },
+              explanation: { type: "string" },
+            },
+            required: ["type", "prompt", "answer"],
+          },
+        },
+      },
+      required: ["setId", "exercises"],
+    },
+  },
+  {
+    name: "create_class",
+    description:
+      "Create a new class folder. Use this when the student wants to start a new subject/class, then put notes, decks, or quizzes inside it with the other tools.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Class name, e.g. 'Biology' or 'Algebra II'." },
+        colorTag: {
+          type: "string",
+          description: "Optional color: one of violet, sky, emerald, amber, rose, slate, or a #hex.",
+        },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "delete_note",
+    description:
+      "Permanently delete a whole note. Only do this when the student clearly asks to delete that specific note. There is no undo.",
+    input_schema: {
+      type: "object",
+      properties: { noteId: { type: "string" } },
+      required: ["noteId"],
+    },
+  },
+  {
+    name: "delete_deck",
+    description:
+      "Permanently delete a whole flashcard deck and all of its cards. Only do this when the student clearly asks to delete that specific deck. There is no undo. (To remove individual cards, use update_flashcards instead.)",
+    input_schema: {
+      type: "object",
+      properties: { deckId: { type: "string" } },
+      required: ["deckId"],
+    },
+  },
+  {
+    name: "delete_exercise_set",
+    description:
+      "Permanently delete a whole practice quiz and all of its questions. Only do this when the student clearly asks to delete that specific quiz. There is no undo. (To remove individual questions, use update_exercises instead.)",
+    input_schema: {
+      type: "object",
+      properties: { setId: { type: "string" } },
+      required: ["setId"],
+    },
+  },
+  {
+    name: "delete_class",
+    description:
+      "Permanently delete a whole class AND everything inside it — every note, deck, and quiz in that class. This is very destructive with no undo, so only do it when the student unambiguously asks to delete that entire class by name.",
+    input_schema: {
+      type: "object",
+      properties: { classId: { type: "string" } },
+      required: ["classId"],
+    },
+  },
 ];
 
 const createFlashcardsInput = z.object({
@@ -443,6 +531,32 @@ const updateFlashcardsInput = z
   });
 
 const readExerciseSetInput = z.object({ setId: z.string() });
+
+const addExercisesInput = z.object({
+  setId: z.string(),
+  exercises: z
+    .array(
+      z.object({
+        type: z.enum(["mcq", "true_false", "fill_blank", "short_answer"]),
+        prompt: z.string().min(1).max(2000),
+        options: z.array(z.string().min(1).max(500)).min(2).max(6).optional(),
+        answer: z.string().min(1).max(4000),
+        explanation: z.string().max(4000).optional(),
+      }),
+    )
+    .min(1)
+    .max(25),
+});
+
+const createClassInput = z.object({
+  name: z.string().min(1).max(80),
+  colorTag: z.string().max(40).optional(),
+});
+
+const deleteNoteInput = z.object({ noteId: z.string() });
+const deleteDeckInput = z.object({ deckId: z.string() });
+const deleteSetInput = z.object({ setId: z.string() });
+const deleteClassInput = z.object({ classId: z.string() });
 
 const updateExercisesInput = z
   .object({
@@ -758,6 +872,108 @@ async function executeAssistantTool(
     return { result: `Done: ${parts.join(", ")} in the quiz "${renameTo ?? set.name}". Confirm briefly.` };
   }
 
+  if (toolName === "add_exercises") {
+    const parsed = addExercisesInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const { setId, exercises } = parsed.data;
+    const set = await getOwnedExerciseSet(userId, setId).catch(() => null);
+    if (!set) return { result: `No practice set with id ${setId} exists for this student.`, isError: true };
+
+    const invalidMcq = exercises.find((e) => e.type === "mcq" && (!e.options || !e.options.includes(e.answer)));
+    if (invalidMcq) {
+      return { result: "Every mcq question needs an options array that contains the answer exactly. Fix and retry.", isError: true };
+    }
+
+    const last = await prisma.exercise.findFirst({
+      where: { setId: set.id },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    let position = (last?.position ?? -1) + 1;
+
+    await prisma.exercise.createMany({
+      data: exercises.map((e) => ({
+        setId: set.id,
+        type: e.type,
+        prompt: e.prompt,
+        optionsJson: e.type === "mcq" && e.options ? JSON.stringify(e.options) : null,
+        answer: e.type === "true_false" ? e.answer.toLowerCase() : e.answer,
+        explanation: e.explanation ?? null,
+        position: position++,
+      })),
+    });
+
+    send({
+      type: "action",
+      label: `Added ${exercises.length} question${exercises.length === 1 ? "" : "s"} to "${set.name}"`,
+      href: `/practice/${set.id}`,
+    });
+    return { result: `Added ${exercises.length} questions to the quiz "${set.name}". Confirm briefly.` };
+  }
+
+  if (toolName === "create_class") {
+    const parsed = createClassInput.safeParse(toolInput);
+    if (!parsed.success) {
+      return { result: `Invalid input: ${parsed.error.issues[0]?.message ?? "bad arguments"}`, isError: true };
+    }
+    const cf = await prisma.classFolder.create({
+      data: { name: parsed.data.name, colorTag: parsed.data.colorTag ?? null, userId },
+    });
+    send({ type: "action", label: `Created class "${cf.name}"`, href: `/classes/${cf.id}` });
+    return { result: `Created the class "${cf.name}" (classId: ${cf.id}). You can now add notes, decks, or quizzes to it. Confirm briefly.` };
+  }
+
+  if (toolName === "delete_note") {
+    const parsed = deleteNoteInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a noteId.", isError: true };
+    const note = await getOwnedNote(userId, parsed.data.noteId).catch(() => null);
+    if (!note) return { result: `No note with id ${parsed.data.noteId} exists for this student.`, isError: true };
+    await prisma.note.delete({ where: { id: note.id } });
+    send({ type: "action", label: `Deleted note "${note.title}"` });
+    return { result: `Deleted the note "${note.title}". Confirm briefly.` };
+  }
+
+  if (toolName === "delete_deck") {
+    const parsed = deleteDeckInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a deckId.", isError: true };
+    const deck = await getOwnedDeck(userId, parsed.data.deckId).catch(() => null);
+    if (!deck) return { result: `No deck with id ${parsed.data.deckId} exists for this student.`, isError: true };
+    const count = await prisma.flashcard.count({ where: { deckId: deck.id } });
+    await prisma.deck.delete({ where: { id: deck.id } });
+    send({ type: "action", label: `Deleted deck "${deck.name}" (${count} cards)` });
+    return { result: `Deleted the deck "${deck.name}" and its ${count} cards. Confirm briefly.` };
+  }
+
+  if (toolName === "delete_exercise_set") {
+    const parsed = deleteSetInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a setId.", isError: true };
+    const set = await getOwnedExerciseSet(userId, parsed.data.setId).catch(() => null);
+    if (!set) return { result: `No practice set with id ${parsed.data.setId} exists for this student.`, isError: true };
+    const count = await prisma.exercise.count({ where: { setId: set.id } });
+    await prisma.exerciseSet.delete({ where: { id: set.id } });
+    send({ type: "action", label: `Deleted quiz "${set.name}" (${count} questions)` });
+    return { result: `Deleted the quiz "${set.name}" and its ${count} questions. Confirm briefly.` };
+  }
+
+  if (toolName === "delete_class") {
+    const parsed = deleteClassInput.safeParse(toolInput);
+    if (!parsed.success) return { result: "Invalid input: pass a classId.", isError: true };
+    const cf = await getOwnedClassFolder(userId, parsed.data.classId).catch(() => null);
+    if (!cf) return { result: `No class with id ${parsed.data.classId} exists for this student.`, isError: true };
+    const counts = await prisma.$transaction([
+      prisma.note.count({ where: { classFolderId: cf.id } }),
+      prisma.deck.count({ where: { classFolderId: cf.id } }),
+      prisma.exerciseSet.count({ where: { classFolderId: cf.id } }),
+    ]);
+    await prisma.classFolder.delete({ where: { id: cf.id } });
+    send({ type: "action", label: `Deleted class "${cf.name}" and everything in it` });
+    return {
+      result: `Deleted the class "${cf.name}" along with ${counts[0]} notes, ${counts[1]} decks, and ${counts[2]} quizzes. Confirm briefly.`,
+    };
+  }
+
   return { result: `Unknown tool: ${toolName}`, isError: true };
 }
 
@@ -780,7 +996,9 @@ function buildSystemPrompt(workspaceContext: string, pageContext: string, gradeL
     "- When asked for a study plan (especially with a test date, e.g. 'I have a bio test Friday'), build a concrete day-by-day plan using their actual notes, decks, and quizzes for that class: what to review each day, when to take practice quizzes, and how to use spaced repetition in the run-up. Be specific and realistic about time.",
     "- When asked to quiz them, ask one question at a time from their notes or cards, wait for their answer, then give feedback before the next question.",
     "- Use the create_flashcards tool when they ask for flashcards, the create_exercise_set tool when they ask for a quiz or practice questions, and the create_note tool when they ask you to save a study guide or summary as a note.",
-    "- You can also EDIT existing content when asked to fix, change, reword, expand, or delete something: update_note for notes (call read_note first if the snapshot shows the note clipped with …), update_flashcards for cards in a deck (cardId values are in the snapshot), and update_exercises for quiz questions (ALWAYS call read_exercise_set first — the snapshot doesn't include quiz questions). Prefer editing the existing item over creating a duplicate.",
+    "- You can EDIT existing content when asked to fix, change, reword, or expand something: update_note for notes (call read_note first if the snapshot shows the note clipped with …), update_flashcards for cards in a deck (cardId values are in the snapshot), and update_exercises for quiz questions (ALWAYS call read_exercise_set first — the snapshot doesn't include quiz questions). Prefer editing the existing item over creating a duplicate.",
+    "- You can ADD to existing items: create_flashcards with a deckId adds cards to an existing deck, and add_exercises adds questions to an existing quiz. Use these rather than making a new deck/quiz when the student wants more of what they already have.",
+    "- You can also create a new class (create_class) and DELETE things when the student clearly asks: delete_note, delete_deck (whole deck), delete_exercise_set (whole quiz), and delete_class (a whole class and all its contents). Deletes are permanent with no undo, so only delete the specific item the student asked for, and never delete something as a side effect of another request.",
     "- When the student asks you to make something, call the tool IMMEDIATELY as your very first output — no text before it. Do not say 'Sure!', 'I'd be happy to', or announce what you're about to do; every word before the tool call just makes the student wait longer. Only after the tool result comes back, confirm what you made in one short sentence.",
     "- Never open a reply with filler agreement or flattery ('Great question!', 'Absolutely!'). Start with the substance.",
     "- Keep answers focused — a short paragraph or two, not an essay. Adapt to what the student seems to already know.",
