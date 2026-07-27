@@ -231,7 +231,7 @@ export function StudySessionPage() {
                 </button>
               </div>
               {explanation && (
-                <div className="animate-flip-in mt-3 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 text-sm text-slate-700 dark:text-slate-200">
+                <div className="animate-flip-in mt-3 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 text-sm text-slate-700 dark:border-violet-500/30 dark:from-violet-500/10 dark:to-indigo-500/10 dark:text-slate-200">
                   {explanation}
                 </div>
               )}

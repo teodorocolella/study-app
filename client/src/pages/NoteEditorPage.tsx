@@ -290,7 +290,7 @@ export function NoteEditorPage() {
       </div>
 
       {aiSummary && (
-        <div className="animate-flip-in mb-4 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
+        <div className="animate-flip-in mb-4 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4 dark:border-violet-500/30 dark:from-violet-500/10 dark:to-indigo-500/10">
           <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-500">
             <Sparkles className="h-3.5 w-3.5" />
             AI summary
