@@ -16,6 +16,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, DashboardSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { useAuth } from "../hooks/useAuth";
 import { ImportModal } from "../components/import/ImportModal";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
@@ -39,6 +40,8 @@ export function DashboardPage() {
   useEffect(() => {
     loadSummary().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
   }, []);
+
+  useAssistantRefresh(() => void loadSummary().catch(() => {}));
 
   async function handleCreateClass(e: FormEvent) {
     e.preventDefault();

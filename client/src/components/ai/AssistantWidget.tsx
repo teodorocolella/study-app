@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api, ApiError } from "../../api/client";
+import { ASSISTANT_ACTION_EVENT } from "../../hooks/useAssistantRefresh";
 
 interface AssistantAction {
   label: string;
@@ -140,6 +141,10 @@ export function AssistantWidget() {
               ...last,
               actions: [...(last.actions ?? []), { label: event.label, href: event.href }],
             }));
+            // Tell the current page its data may have changed so it can re-fetch.
+            window.dispatchEvent(
+              new CustomEvent(ASSISTANT_ACTION_EVENT, { detail: { href: event.href } }),
+            );
           } else if (event.type === "error") {
             setError(event.message);
           }

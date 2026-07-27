@@ -15,6 +15,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Exercise, ExerciseSetDetail, ExerciseType } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 
 export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   mcq: "Multiple choice",
@@ -48,6 +49,8 @@ export function ExerciseSetPage() {
     load().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setId]);
+
+  useAssistantRefresh(() => void load().catch(() => {}));
 
   async function handleDeleteSet() {
     if (!set) return;

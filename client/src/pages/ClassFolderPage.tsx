@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, Deck, ExerciseSetSummary, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { ImportModal } from "../components/import/ImportModal";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { CLASS_COLORS, classGradient } from "../lib/classColors";
@@ -43,6 +44,8 @@ export function ClassFolderPage() {
     load().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
+
+  useAssistantRefresh(() => void load().catch(() => {}));
 
   async function handleCreateNote(e: FormEvent) {
     e.preventDefault();

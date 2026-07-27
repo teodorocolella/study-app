@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { ClassFolder, DashboardSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { CLASS_COLORS, classGradient } from "../lib/classColors";
 
@@ -23,6 +24,8 @@ export function ClassesPage() {
   useEffect(() => {
     load().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
   }, []);
+
+  useAssistantRefresh(() => void load().catch(() => {}));
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();

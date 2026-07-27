@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, ExerciseType, Note } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { DrawingModal } from "../components/notes/DrawingModal";
 import { EditorToolbar } from "../components/notes/EditorToolbar";
 import { ShareModal } from "../components/share/ShareModal";
@@ -72,7 +73,7 @@ export function NoteEditorPage() {
     },
   });
 
-  useEffect(() => {
+  function loadNote() {
     if (!noteId || !editor) return;
     api
       .get<Note>(`/notes/${noteId}`)
@@ -83,8 +84,15 @@ export function NoteEditorPage() {
         setAiSummary(note.aiSummary);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load note"));
+  }
+
+  useEffect(() => {
+    loadNote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId, editor]);
+
+  // Reload this note if the AI assistant edits it while it's open.
+  useAssistantRefresh(loadNote);
 
   useEffect(() => {
     if (!classId) return;

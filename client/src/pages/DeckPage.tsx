@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Deck, Flashcard } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { ImagePicker } from "../components/cards/ImagePicker";
 import { OcclusionCardModal } from "../components/cards/OcclusionCardModal";
 import { ShareModal } from "../components/share/ShareModal";
@@ -38,6 +39,9 @@ export function DeckPage() {
     load().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckId]);
+
+  // Re-fetch when the AI assistant changes this deck's cards.
+  useAssistantRefresh(() => void load().catch(() => {}));
 
   async function handleAddCard(e: FormEvent) {
     e.preventDefault();

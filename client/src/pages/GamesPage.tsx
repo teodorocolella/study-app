@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { DeckSummary } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { getBest, type GameId } from "../lib/gameScores";
 import { classGradient } from "../lib/classColors";
 
@@ -18,12 +19,18 @@ export function GamesPage() {
   const [selected, setSelected] = useState<DeckSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api
+  function loadDecks() {
+    return api
       .get<DeckSummary[]>("/decks")
       .then((d) => setDecks(d.filter((deck) => deck.cardCount >= 2)))
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load decks"));
+  }
+
+  useEffect(() => {
+    void loadDecks();
   }, []);
+
+  useAssistantRefresh(() => void loadDecks());
 
   return (
     <AppShell>
