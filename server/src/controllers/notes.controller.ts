@@ -19,6 +19,7 @@ const createSchema = z.object({
   title: z.string().min(1).max(200),
   contentHtml: z.string().default(""),
   folderId: z.string().nullish(),
+  colorTag: z.string().max(40).nullish(),
 });
 
 export async function createNote(req: Request, res: Response) {
@@ -54,6 +55,7 @@ const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   contentHtml: z.string().optional(),
   folderId: z.string().nullish(), // null = move to class root
+  colorTag: z.string().max(40).nullish(),
 });
 
 export async function updateNote(req: Request, res: Response) {

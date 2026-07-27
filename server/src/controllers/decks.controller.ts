@@ -48,6 +48,7 @@ export async function listAllDecks(req: Request, res: Response) {
 const createSchema = z.object({
   name: z.string().min(1).max(120),
   folderId: z.string().nullish(),
+  colorTag: z.string().max(40).nullish(),
 });
 
 export async function createDeck(req: Request, res: Response) {
@@ -79,6 +80,7 @@ export async function getDeck(req: Request, res: Response) {
 const updateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   folderId: z.string().nullish(),
+  colorTag: z.string().max(40).nullish(),
 });
 
 export async function updateDeck(req: Request, res: Response) {

@@ -150,6 +150,7 @@ model Folder {
 model ExerciseSet {
   id            String      @id @default(cuid())
   name          String
+  colorTag      String?
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?
@@ -198,6 +199,7 @@ model Note {
   title         String
   contentHtml   String      @db.Text
   aiSummary     String?     @db.Text
+  colorTag      String?
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?
@@ -212,6 +214,7 @@ model Note {
 model Deck {
   id            String      @id @default(cuid())
   name          String
+  colorTag      String?
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?

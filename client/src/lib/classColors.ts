@@ -99,5 +99,17 @@ export function classGradient(
       style: { backgroundImage: `linear-gradient(${to}, ${colorTag}, ${shadeHex(colorTag, -22)})` },
     };
   }
-  return { className: `bg-gradient-to-${dir} ${getClassColor(colorTag).gradient}` };
+  // Full literal class names — Tailwind's scanner can't see interpolated strings
+  // like `bg-gradient-to-${dir}`, so it would never generate the CSS for them.
+  const base = dir === "b" ? "bg-gradient-to-b" : "bg-gradient-to-br";
+  return { className: `${base} ${getClassColor(colorTag).gradient}` };
+}
+
+/** Accent bar for an individual item: its color if set, else a neutral bar. */
+export function itemAccent(colorTag: string | null | undefined): {
+  className: string;
+  style?: React.CSSProperties;
+} {
+  if (!colorTag) return { className: "bg-slate-200 dark:bg-slate-700" };
+  return classGradient(colorTag, "b");
 }

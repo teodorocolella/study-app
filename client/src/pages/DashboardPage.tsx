@@ -20,7 +20,8 @@ import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 import { useAuth } from "../hooks/useAuth";
 import { ImportModal } from "../components/import/ImportModal";
 import { ClassColorPicker } from "../components/layout/ClassColorPicker";
-import { CLASS_COLORS, classGradient } from "../lib/classColors";
+import { ClassLogo } from "../components/layout/ClassLogo";
+import { CLASS_COLORS } from "../lib/classColors";
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -137,26 +138,25 @@ export function DashboardPage() {
           <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">No classes yet — create one below to get started.</p>
         )}
         {summary?.classes.map((c) => {
-          const g = classGradient(c.colorTag, "b");
           return (
             <Link
               key={c.classId}
               to={`/classes/${c.classId}`}
-              className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="group flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className={`absolute inset-y-0 left-0 w-1.5 ${g.className}`} style={g.style} />
-              <div className="pl-2">
+              <ClassLogo colorTag={c.colorTag} />
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
+                  <span className="truncate font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
                   </span>
                   {c.dueCount > 0 && (
-                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                    <span className="ml-2 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
                       {c.dueCount} due
                     </span>
                   )}
                 </div>
-                <div className="mt-2.5 flex items-center gap-3 text-xs text-slate-400">
+                <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <BookOpen className="h-3 w-3" />
                     {c.noteCount} note{c.noteCount === 1 ? "" : "s"}

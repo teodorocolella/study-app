@@ -23,6 +23,7 @@ export interface Note {
   title: string;
   contentHtml: string;
   aiSummary: string | null;
+  colorTag: string | null;
   classFolderId: string;
   folderId: string | null;
   createdAt: string;
@@ -32,6 +33,7 @@ export interface Note {
 export interface Deck {
   id: string;
   name: string;
+  colorTag: string | null;
   classFolderId: string;
   folderId: string | null;
   createdAt: string;
@@ -74,6 +76,7 @@ export interface Exercise {
 export interface ExerciseSetSummary {
   id: string;
   name: string;
+  colorTag: string | null;
   classFolderId: string;
   createdAt: string;
   exerciseCount: number;

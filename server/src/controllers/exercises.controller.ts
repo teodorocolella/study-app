@@ -72,6 +72,8 @@ export async function listExerciseSets(req: Request, res: Response) {
     sets.map((set) => ({
       id: set.id,
       name: set.name,
+      colorTag: set.colorTag,
+      folderId: set.folderId,
       classFolderId: set.classFolderId,
       createdAt: set.createdAt,
       exerciseCount: set._count.exercises,
@@ -83,6 +85,7 @@ export async function listExerciseSets(req: Request, res: Response) {
 const createSetSchema = z.object({
   name: z.string().min(1).max(120),
   folderId: z.string().nullish(),
+  colorTag: z.string().max(40).nullish(),
 });
 
 async function assertFolderInClass(userId: string, folderId: string, classId: string) {
@@ -103,7 +106,12 @@ export async function createExerciseSet(req: Request, res: Response) {
   }
   if (parsed.data.folderId) await assertFolderInClass(req.userId, parsed.data.folderId, classId);
   const set = await prisma.exerciseSet.create({
-    data: { name: parsed.data.name, classFolderId: classId, folderId: parsed.data.folderId ?? null },
+    data: {
+      name: parsed.data.name,
+      classFolderId: classId,
+      folderId: parsed.data.folderId ?? null,
+      colorTag: parsed.data.colorTag ?? null,
+    },
   });
   res.status(201).json(set);
 }
@@ -138,6 +146,7 @@ export async function getExerciseSet(req: Request, res: Response) {
 const updateSetSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   folderId: z.string().nullish(),
+  colorTag: z.string().max(40).nullish(),
 });
 
 export async function updateExerciseSet(req: Request, res: Response) {
