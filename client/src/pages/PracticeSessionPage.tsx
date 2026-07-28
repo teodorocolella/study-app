@@ -273,9 +273,12 @@ function AnswerInput({
   onChange: (value: string) => void;
 }) {
   if (exercise.type === "mcq" && exercise.options) {
+    // Collapse duplicate options: a repeated choice would share a React key and
+    // light up every copy when one is picked (value === option matches them all).
+    const options = [...new Set(exercise.options)];
     return (
       <div className="space-y-2">
-        {exercise.options.map((option) => (
+        {options.map((option) => (
           <button
             key={option}
             onClick={() => onChange(option)}

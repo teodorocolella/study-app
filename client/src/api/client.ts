@@ -71,6 +71,7 @@ async function streamRequest(
   path: string,
   body: unknown,
   onEvent: (event: unknown) => void,
+  signal?: AbortSignal,
   retry = true,
 ): Promise<void> {
   const token = getAccessToken();
@@ -82,12 +83,13 @@ async function streamRequest(
     },
     body: JSON.stringify(body),
     credentials: "include",
+    signal,
   });
 
   if (res.status === 401 && retry) {
     const refreshed = await tryRefresh();
     if (refreshed) {
-      return streamRequest(path, body, onEvent, false);
+      return streamRequest(path, body, onEvent, signal, false);
     }
   }
 

@@ -1016,6 +1016,7 @@ export async function runAssistant(
   userMessage: string,
   page: PageContext | undefined,
   send: (event: AssistantEvent) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const [workspaceContext, pageContext, gradeUser] = await Promise.all([
     buildWorkspaceContext(userId),
@@ -1045,14 +1046,20 @@ export async function runAssistant(
   );
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const stream = client.messages.stream({
-      model: MODEL,
-      max_tokens: 2048,
-      thinking: { type: "disabled" },
-      system,
-      tools,
-      messages,
-    });
+    // If the student navigated away or refreshed, stop before doing more work
+    // (and, crucially, before executing any more content-creating tools).
+    if (signal?.aborted) return;
+    const stream = client.messages.stream(
+      {
+        model: MODEL,
+        max_tokens: 2048,
+        thinking: { type: "disabled" },
+        system,
+        tools,
+        messages,
+      },
+      signal ? { signal } : undefined,
+    );
 
     stream.on("text", (text) => send({ type: "text", text }));
     stream.on("streamEvent", (event) => {
@@ -1068,6 +1075,7 @@ export async function runAssistant(
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
     for (const block of finalMessage.content) {
       if (block.type !== "tool_use") continue;
+      if (signal?.aborted) return;
       const outcome = await executeAssistantTool(userId, block.name, block.input, send);
       toolResults.push({
         type: "tool_result",

@@ -42,7 +42,18 @@ const QUICK_PROMPTS = [
 function loadMessages(): AssistantMessage[] {
   try {
     const raw = sessionStorage.getItem(MESSAGES_KEY);
-    return raw ? (JSON.parse(raw) as AssistantMessage[]) : [];
+    const messages = raw ? (JSON.parse(raw) as AssistantMessage[]) : [];
+    // A stream interrupted by a refresh leaves a trailing empty assistant
+    // bubble; drop it so the panel doesn't reopen showing a blank reply.
+    while (
+      messages.length &&
+      messages[messages.length - 1].role === "assistant" &&
+      !messages[messages.length - 1].content &&
+      !messages[messages.length - 1].actions?.length
+    ) {
+      messages.pop();
+    }
+    return messages;
   } catch {
     return [];
   }
@@ -69,6 +80,10 @@ export function AssistantWidget() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight stream if the widget unmounts.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   useEffect(() => {
     sessionStorage.setItem(OPEN_KEY, open ? "1" : "0");
@@ -115,6 +130,9 @@ export function AssistantWidget() {
     setSending(true);
     setError(null);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const appendToReply = (updater: (last: AssistantMessage) => AssistantMessage) => {
       setMessages((prev) => {
         const next = [...prev];
@@ -129,6 +147,7 @@ export function AssistantWidget() {
         "/ai/assistant",
         { message, history, page: getPageContext(location.pathname) },
         (raw) => {
+          if (controller.signal.aborted) return;
           const event = raw as AssistantEvent;
           if (event.type === "text") {
             setWorking(null);
@@ -151,18 +170,25 @@ export function AssistantWidget() {
         },
       );
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to reach the assistant");
+      // An intentional abort (reset button / unmount) isn't a real error.
+      if (!controller.signal.aborted) {
+        setError(err instanceof ApiError ? err.message : "Failed to reach the assistant");
+      }
     } finally {
-      setSending(false);
-      setWorking(null);
-      // Drop an empty reply bubble if the request failed before any text arrived.
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && !last.content && !last.actions?.length) {
-          return prev.slice(0, -1);
-        }
-        return prev;
-      });
+      // Only settle if a newer send or a reset hasn't already taken over.
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setSending(false);
+        setWorking(null);
+        // Drop an empty reply bubble if the request ended before any text arrived.
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && !last.content && !last.actions?.length) {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
+      }
     }
   }
 
@@ -172,6 +198,11 @@ export function AssistantWidget() {
   }
 
   function handleClear() {
+    // Stop any in-flight response so the panel doesn't stay locked.
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setSending(false);
+    setWorking(null);
     setMessages([]);
     setError(null);
     sessionStorage.removeItem(MESSAGES_KEY);

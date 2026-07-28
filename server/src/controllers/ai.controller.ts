@@ -267,23 +267,34 @@ export async function postAssistant(req: Request, res: Response) {
     Connection: "keep-alive",
     "X-Accel-Buffering": "no",
   });
+
+  // Stop the run (and any further tool calls) if the client refreshes,
+  // navigates away, or otherwise drops the connection mid-response.
+  const abort = new AbortController();
+  res.on("close", () => abort.abort());
+
   const send = (event: AssistantEvent) => {
+    if (abort.signal.aborted) return;
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   };
 
   try {
-    await runAssistant(req.userId, history, message, page, send);
+    await runAssistant(req.userId, history, message, page, send, abort.signal);
   } catch (err) {
-    const friendly =
-      err instanceof Anthropic.APIError
-        ? "The AI assistant is temporarily unavailable. Please try again in a moment."
-        : "Something went wrong. Please try again.";
-    send({ type: "error", message: friendly });
-    if (!(err instanceof Anthropic.APIError)) {
-      console.error("Assistant error:", err);
+    // A client disconnect surfaces as an abort — nothing to report to a socket
+    // that's already gone.
+    if (!abort.signal.aborted) {
+      const friendly =
+        err instanceof Anthropic.APIError
+          ? "The AI assistant is temporarily unavailable. Please try again in a moment."
+          : "Something went wrong. Please try again.";
+      send({ type: "error", message: friendly });
+      if (!(err instanceof Anthropic.APIError)) {
+        console.error("Assistant error:", err);
+      }
     }
   } finally {
-    res.end();
+    if (!abort.signal.aborted) res.end();
   }
 }
 
