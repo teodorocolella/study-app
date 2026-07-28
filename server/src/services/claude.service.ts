@@ -111,7 +111,7 @@ export async function gradeShortAnswers(submissions: ShortAnswerSubmission[]) {
     model: MODEL,
     max_tokens: 4096,
     thinking: { type: "disabled" },
-    system: `You grade short-answer quiz responses from a middle/high school student. For each item, compare the student's answer to the model answer. Mark it correct if it captures the essential idea, even in different words — grade the understanding, not the phrasing. Mark it incorrect if a key point is wrong or missing. Give one or two sentences of encouraging feedback: say what they got right and what was missing or mistaken. Return a grade for every index you were given. ${NO_MARKDOWN}`,
+    system: `You grade short-answer quiz responses from a middle/high school student. For each item, compare the student's answer to the model answer. Mark it correct if it captures the essential idea, even in different words — grade the understanding, not the phrasing. Do NOT mark an answer wrong just for leaving off units of measurement, abbreviating them, or formatting them differently (for example, answering "9.8" or "9.8 m/s" when the model answer says "9.8 meters per second"); the value/idea being right is what matters. Mark it incorrect only if a key point is actually wrong or missing. Give one or two sentences of encouraging feedback: say what they got right and what was missing or mistaken. Return a grade for every index you were given. ${NO_MARKDOWN}`,
     messages: [{ role: "user", content: JSON.stringify(submissions) }],
     output_config: { format: zodOutputFormat(shortAnswerGradesSchema) },
   });

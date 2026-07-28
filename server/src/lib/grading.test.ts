@@ -34,4 +34,28 @@ describe("fuzzyAnswerMatch", () => {
   it("is strict on very short answers (no typo leniency)", () => {
     expect(fuzzyAnswerMatch("pi", "po")).toBe(false);
   });
+
+  it("accepts the right number even when the unit is dropped", () => {
+    expect(fuzzyAnswerMatch("9.8 meters per second", "9.8")).toBe(true);
+    expect(fuzzyAnswerMatch("9.8 m/s", "9.8")).toBe(true);
+    expect(fuzzyAnswerMatch("60 mph", "60")).toBe(true);
+    expect(fuzzyAnswerMatch("100", "100 meters")).toBe(true);
+    expect(fuzzyAnswerMatch("3.14", "3.14")).toBe(true);
+  });
+
+  it("treats unit spellings and symbols the same", () => {
+    expect(fuzzyAnswerMatch("9.8 meters per second", "9.8 m/s")).toBe(true);
+    expect(fuzzyAnswerMatch("5 meters", "5 m")).toBe(true);
+    expect(fuzzyAnswerMatch("meters per second", "m/s")).toBe(true);
+  });
+
+  it("still rejects a wrong number", () => {
+    expect(fuzzyAnswerMatch("9.8 meters per second", "10")).toBe(false);
+    expect(fuzzyAnswerMatch("60 mph", "65")).toBe(false);
+  });
+
+  it("does not accept a matching number with a non-unit noun", () => {
+    // "apples" is not a unit, so "5" alone should not pass for "5 apples".
+    expect(fuzzyAnswerMatch("5 apples", "5")).toBe(false);
+  });
 });
