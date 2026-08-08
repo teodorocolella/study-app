@@ -20,9 +20,11 @@ export async function getDueCards(userId: string, filter: DueCardsFilter = {}) {
   const cards = await prisma.flashcard.findMany({
     where: {
       deck: {
+        archived: false,
         ...(filter.deckId ? { id: filter.deckId } : {}),
         classFolder: {
           userId,
+          archived: false,
           ...(filter.classId ? { id: filter.classId } : {}),
         },
       },
@@ -99,7 +101,7 @@ export async function getDashboardSummary(userId: string) {
 
   const [classFolders, dueCards, reviewLogs] = await Promise.all([
     prisma.classFolder.findMany({
-      where: { userId },
+      where: { userId, archived: false },
       select: {
         id: true,
         name: true,

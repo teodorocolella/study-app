@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { fuzzyAnswerMatch } from "../lib/grading.js";
-import { folderFilter, param } from "../lib/params.js";
+import { archivedFilter, folderFilter, param } from "../lib/params.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import {
@@ -55,7 +55,7 @@ export async function listExerciseSets(req: Request, res: Response) {
   await getOwnedClassFolder(req.userId, classId);
 
   const sets = await prisma.exerciseSet.findMany({
-    where: { classFolderId: classId, ...folderFilter(req) },
+    where: { classFolderId: classId, ...folderFilter(req), ...archivedFilter(req) },
     orderBy: { createdAt: "asc" },
     include: {
       _count: { select: { exercises: true } },
@@ -73,6 +73,7 @@ export async function listExerciseSets(req: Request, res: Response) {
       id: set.id,
       name: set.name,
       colorTag: set.colorTag,
+      archived: set.archived,
       folderId: set.folderId,
       classFolderId: set.classFolderId,
       createdAt: set.createdAt,
@@ -147,6 +148,7 @@ const updateSetSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   folderId: z.string().nullish(),
   colorTag: z.string().max(40).nullish(),
+  archived: z.boolean().optional(),
 });
 
 export async function updateExerciseSet(req: Request, res: Response) {

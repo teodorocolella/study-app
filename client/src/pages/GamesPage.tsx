@@ -1,5 +1,5 @@
-import { Gamepad2, Layers, Timer, Trophy, Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Gamepad2, Layers, Search, Timer, Trophy, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { DeckSummary } from "../api/types";
@@ -17,7 +17,16 @@ const GAMES: { id: GameId; name: string; blurb: string; icon: typeof Zap; emoji:
 export function GamesPage() {
   const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [selected, setSelected] = useState<DeckSummary | null>(null);
+  const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const filteredDecks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return decks;
+    return decks.filter(
+      (d) => d.name.toLowerCase().includes(q) || d.className.toLowerCase().includes(q),
+    );
+  }, [decks, query]);
 
   function loadDecks() {
     return api
@@ -49,8 +58,25 @@ export function GamesPage() {
         </p>
       )}
 
+      {decks.length > 0 && (
+        <div className="relative mb-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search decks by name or class…"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 py-2 pl-9 pr-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:text-slate-200"
+          />
+        </div>
+      )}
+
+      {decks.length > 0 && filteredDecks.length === 0 && (
+        <p className="mb-8 text-sm text-slate-500 dark:text-slate-400">No decks match “{query}”.</p>
+      )}
+
       <div className="mb-8 grid gap-3 sm:grid-cols-2">
-        {decks.map((deck) => {
+        {filteredDecks.map((deck) => {
           const g = classGradient(deck.colorTag, "b");
           const active = selected?.id === deck.id;
           return (

@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { ApiError } from "../middleware/errorHandler.js";
-import { folderFilter, param } from "../lib/params.js";
+import { archivedFilter, folderFilter, param } from "../lib/params.js";
 import { prisma } from "../prisma.js";
 import { getOwnedClassFolder, getOwnedFolder, getOwnedNote } from "../services/ownership.service.js";
 
@@ -9,7 +9,7 @@ export async function listNotes(req: Request, res: Response) {
   const classId = param(req, "classId");
   await getOwnedClassFolder(req.userId, classId);
   const notes = await prisma.note.findMany({
-    where: { classFolderId: classId, ...folderFilter(req) },
+    where: { classFolderId: classId, ...folderFilter(req), ...archivedFilter(req) },
     orderBy: { updatedAt: "desc" },
   });
   res.json(notes);
@@ -56,6 +56,7 @@ const updateSchema = z.object({
   contentHtml: z.string().optional(),
   folderId: z.string().nullish(), // null = move to class root
   colorTag: z.string().max(40).nullish(),
+  archived: z.boolean().optional(),
 });
 
 export async function updateNote(req: Request, res: Response) {

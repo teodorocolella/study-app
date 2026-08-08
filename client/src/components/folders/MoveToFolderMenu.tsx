@@ -1,5 +1,6 @@
 import { Check, FolderInput } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../../api/client";
 import type { FolderSummary, MovableType } from "../../api/types";
 
@@ -8,6 +9,8 @@ const PATCH_PATH: Record<MovableType, (id: string) => string> = {
   deck: (id) => `/decks/${id}`,
   quiz: (id) => `/exercise-sets/${id}`,
 };
+
+const MENU_WIDTH = 208; // w-52
 
 /** Small folder-icon button that moves an item into a folder or out to the class root. */
 export function MoveToFolderMenu({
@@ -25,15 +28,39 @@ export function MoveToFolderMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // The menu is rendered in a portal (so it floats above every card), so its
+  // position is pinned to the trigger button in viewport coordinates and kept
+  // in sync as the page scrolls or resizes.
+  useLayoutEffect(() => {
+    if (!open) return;
+    function reposition() {
+      if (!buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - MENU_WIDTH) });
+    }
+    reposition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open]);
 
   useEffect(() => {
+    if (!open) return;
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
-  }, []);
+  }, [open]);
 
   async function move(folderId: string | null) {
     setBusy(true);
@@ -47,8 +74,9 @@ export function MoveToFolderMenu({
   }
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={(e) => {
           e.preventDefault();
@@ -61,32 +89,38 @@ export function MoveToFolderMenu({
         <FolderInput className="h-4 w-4" />
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-          <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Move to
-          </p>
-          <MenuRow
-            label="Class (no folder)"
-            active={currentFolderId === null}
-            disabled={busy}
-            onClick={() => void move(null)}
-          />
-          {folders.map((f) => (
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: pos.top, left: pos.left, width: MENU_WIDTH, zIndex: 60 }}
+            className="overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+          >
+            <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Move to
+            </p>
             <MenuRow
-              key={f.id}
-              label={f.name}
-              active={currentFolderId === f.id}
+              label="Class (no folder)"
+              active={currentFolderId === null}
               disabled={busy}
-              onClick={() => void move(f.id)}
+              onClick={() => void move(null)}
             />
-          ))}
-          {folders.length === 0 && (
-            <p className="px-3 py-1.5 text-xs text-slate-400">No folders yet in this class.</p>
-          )}
-        </div>
-      )}
-    </div>
+            {folders.map((f) => (
+              <MenuRow
+                key={f.id}
+                label={f.name}
+                active={currentFolderId === f.id}
+                disabled={busy}
+                onClick={() => void move(f.id)}
+              />
+            ))}
+            {folders.length === 0 && (
+              <p className="px-3 py-1.5 text-xs text-slate-400">No folders yet in this class.</p>
+            )}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 

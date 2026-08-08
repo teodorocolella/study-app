@@ -11,11 +11,12 @@ export async function search(req: Request, res: Response) {
 
   const contains = { contains: q, mode: "insensitive" as const };
   const userId = req.userId;
-  const ownedClass = { classFolder: { userId } };
+  // Only search live items: skip archived items and anything in an archived class.
+  const ownedClass = { archived: false, classFolder: { userId, archived: false } };
 
   const [classes, notes, decks, quizzes] = await Promise.all([
     prisma.classFolder.findMany({
-      where: { userId, name: contains },
+      where: { userId, archived: false, name: contains },
       select: { id: true, name: true },
       take: 8,
     }),

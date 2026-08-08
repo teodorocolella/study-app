@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Pencil, Trash2, X } from "lucide-react";
+import { Archive, ArrowLeft, Check, Pencil, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
@@ -23,7 +23,7 @@ export function ClassFolderPage() {
 
   const loadFolders = useCallback(async () => {
     if (!classId) return;
-    setFolders(await api.get<FolderSummary[]>(`/classes/${classId}/folders`));
+    setFolders(await api.get<FolderSummary[]>(`/classes/${classId}/folders?archived=all`));
   }, [classId]);
 
   useEffect(() => {
@@ -48,6 +48,14 @@ export function ClassFolderPage() {
       return;
     await api.delete(`/classes/${classId}`);
     navigate("/dashboard");
+  }
+
+  async function handleToggleArchiveClass() {
+    if (!classId || !classFolder) return;
+    const nextArchived = !classFolder.archived;
+    const updated = await api.patch<ClassFolder>(`/classes/${classId}`, { archived: nextArchived });
+    if (nextArchived) navigate("/dashboard");
+    else setClassFolder(updated);
   }
 
   function startEdit() {
@@ -133,6 +141,13 @@ export function ClassFolderPage() {
               Edit
             </button>
             <button
+              onClick={() => void handleToggleArchiveClass()}
+              className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              {classFolder?.archived ? "Unarchive" : "Archive"}
+            </button>
+            <button
               onClick={() => void handleDeleteClass()}
               className="flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
             >
@@ -145,7 +160,14 @@ export function ClassFolderPage() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       {classId && <FoldersSection classId={classId} folders={folders} onChanged={() => void loadFolders()} />}
-      {classId && <ClassResources classId={classId} folderId={null} folders={folders} onChanged={loadFolders} />}
+      {classId && (
+        <ClassResources
+          classId={classId}
+          folderId={null}
+          folders={folders.filter((f) => !f.archived)}
+          onChanged={loadFolders}
+        />
+      )}
     </AppShell>
   );
 }

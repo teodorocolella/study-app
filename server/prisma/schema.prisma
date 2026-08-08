@@ -117,6 +117,7 @@ model ClassFolder {
   id        String   @id @default(cuid())
   name      String
   colorTag  String?
+  archived  Boolean  @default(false)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -134,6 +135,7 @@ model ClassFolder {
 model Folder {
   id            String      @id @default(cuid())
   name          String
+  archived      Boolean     @default(false)
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   createdAt     DateTime    @default(now())
@@ -151,6 +153,7 @@ model ExerciseSet {
   id            String      @id @default(cuid())
   name          String
   colorTag      String?
+  archived      Boolean     @default(false)
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?
@@ -200,6 +203,7 @@ model Note {
   contentHtml   String      @db.Text
   aiSummary     String?     @db.Text
   colorTag      String?
+  archived      Boolean     @default(false)
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?
@@ -215,6 +219,7 @@ model Deck {
   id            String      @id @default(cuid())
   name          String
   colorTag      String?
+  archived      Boolean     @default(false)
   classFolderId String
   classFolder   ClassFolder @relation(fields: [classFolderId], references: [id], onDelete: Cascade)
   folderId      String?

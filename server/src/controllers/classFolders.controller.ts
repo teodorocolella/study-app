@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { param } from "../lib/params.js";
+import { archivedFilter, param } from "../lib/params.js";
 import { prisma } from "../prisma.js";
 import { getOwnedClassFolder } from "../services/ownership.service.js";
 
 export async function listClassFolders(req: Request, res: Response) {
   const classFolders = await prisma.classFolder.findMany({
-    where: { userId: req.userId },
+    where: { userId: req.userId, ...archivedFilter(req) },
     orderBy: { createdAt: "asc" },
   });
   res.json(classFolders);
@@ -37,6 +37,7 @@ export async function getClassFolder(req: Request, res: Response) {
 const updateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   colorTag: z.string().max(40).nullable().optional(),
+  archived: z.boolean().optional(),
 });
 
 export async function updateClassFolder(req: Request, res: Response) {

@@ -1,13 +1,16 @@
 import { BrainCircuit, FileText, Layers, Plus, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../api/client";
 import type { Deck, ExerciseSetSummary, FolderSummary, Note } from "../../api/types";
 import { useAssistantRefresh } from "../../hooks/useAssistantRefresh";
 import { itemAccent } from "../../lib/classColors";
 import { ImportModal } from "../import/ImportModal";
+import { ArchiveButton } from "./ArchiveButton";
 import { ColorMenu } from "./ColorMenu";
 import { MoveToFolderMenu } from "./MoveToFolderMenu";
+
+type Section = "notes" | "decks" | "quizzes";
 
 /**
  * The Notes / Flashcard decks / Practice quizzes sections for a class, scoped
@@ -34,20 +37,27 @@ export function ClassResources({
   const [newSetName, setNewSetName] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState<Record<Section, boolean>>({
+    notes: false,
+    decks: false,
+    quizzes: false,
+  });
 
+  // Fetch active + archived together so we can show a "show archived" toggle.
   const folderQuery = folderId ? `?folder=${folderId}` : "?folder=root";
+  const listQuery = `${folderQuery}&archived=all`;
 
   const load = useCallback(async () => {
     const [noteList, deckList, setList] = await Promise.all([
-      api.get<Note[]>(`/classes/${classId}/notes${folderQuery}`),
-      api.get<Deck[]>(`/classes/${classId}/decks${folderQuery}`),
-      api.get<ExerciseSetSummary[]>(`/classes/${classId}/exercise-sets${folderQuery}`),
+      api.get<Note[]>(`/classes/${classId}/notes${listQuery}`),
+      api.get<Deck[]>(`/classes/${classId}/decks${listQuery}`),
+      api.get<ExerciseSetSummary[]>(`/classes/${classId}/exercise-sets${listQuery}`),
     ]);
     setNotes(noteList);
     setDecks(deckList);
     setSets(setList);
     onChanged?.();
-  }, [classId, folderQuery, onChanged]);
+  }, [classId, listQuery, onChanged]);
 
   useEffect(() => {
     load().catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"));
@@ -96,6 +106,14 @@ export function ClassResources({
   }
 
   const reload = () => void load().catch(() => {});
+  const toggleArchived = (s: Section) => setShowArchived((prev) => ({ ...prev, [s]: !prev[s] }));
+
+  const activeNotes = notes.filter((n) => !n.archived);
+  const archivedNotes = notes.filter((n) => n.archived);
+  const activeDecks = decks.filter((d) => !d.archived);
+  const archivedDecks = decks.filter((d) => d.archived);
+  const activeSets = sets.filter((s) => !s.archived);
+  const archivedSets = sets.filter((s) => s.archived);
 
   return (
     <>
@@ -118,30 +136,29 @@ export function ClassResources({
           )}
         </div>
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          {notes.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No notes here yet.</p>}
-          {notes.map((note) => {
-            const accent = itemAccent(note.colorTag);
-            return (
-              <div
-                key={note.id}
-                className="group relative flex items-center justify-between rounded-xl border border-slate-200 bg-white py-3.5 pl-5 pr-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
-              >
-                <div className={`absolute inset-y-1.5 left-1.5 w-1 rounded-full ${accent.className}`} style={accent.style} />
-                <Link
-                  to={`/classes/${classId}/notes/${note.id}`}
-                  className="min-w-0 flex-1 truncate font-medium text-slate-700 transition-colors group-hover:text-violet-700 dark:text-slate-200"
-                >
-                  {note.title}
-                </Link>
-                <span className="ml-2 flex items-center gap-2">
-                  <ColorMenu type="note" itemId={note.id} colorTag={note.colorTag} onChanged={reload} />
-                  <MoveToFolderMenu type="note" itemId={note.id} currentFolderId={note.folderId} folders={folders} onMoved={reload} />
-                </span>
-              </div>
-            );
-          })}
+          {activeNotes.length === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">No notes here yet.</p>
+          )}
+          {activeNotes.map((note) => (
+            <ItemCard key={note.id} accentTag={note.colorTag} to={`/classes/${classId}/notes/${note.id}`} title={note.title}>
+              <ColorMenu type="note" itemId={note.id} colorTag={note.colorTag} onChanged={reload} />
+              <ArchiveButton type="note" itemId={note.id} archived={false} onChanged={reload} />
+              <MoveToFolderMenu type="note" itemId={note.id} currentFolderId={note.folderId} folders={folders} onMoved={reload} />
+            </ItemCard>
+          ))}
         </div>
-        <form onSubmit={createNote} className="flex gap-2">
+        <ArchivedGroup
+          open={showArchived.notes}
+          count={archivedNotes.length}
+          onToggle={() => toggleArchived("notes")}
+        >
+          {archivedNotes.map((note) => (
+            <ArchivedRow key={note.id} to={`/classes/${classId}/notes/${note.id}`} title={note.title}>
+              <ArchiveButton type="note" itemId={note.id} archived onChanged={reload} />
+            </ArchivedRow>
+          ))}
+        </ArchivedGroup>
+        <form onSubmit={createNote} className="mt-3 flex gap-2">
           <input
             type="text"
             placeholder="New note title"
@@ -162,30 +179,32 @@ export function ClassResources({
           Flashcard decks
         </h2>
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          {decks.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No decks here yet.</p>}
-          {decks.map((deck) => {
-            const accent = itemAccent(deck.colorTag);
-            return (
-              <div
-                key={deck.id}
-                className="group relative flex items-center justify-between rounded-xl border border-slate-200 bg-white py-3.5 pl-5 pr-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
-              >
-                <div className={`absolute inset-y-1.5 left-1.5 w-1 rounded-full ${accent.className}`} style={accent.style} />
-                <Link to={`/decks/${deck.id}`} className="min-w-0 flex-1 truncate font-medium text-slate-700 transition-colors group-hover:text-violet-700 dark:text-slate-200">
-                  {deck.name}
-                </Link>
-                <span className="ml-2 flex items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                    {deck._count.cards}
-                  </span>
-                  <ColorMenu type="deck" itemId={deck.id} colorTag={deck.colorTag} onChanged={reload} />
-                  <MoveToFolderMenu type="deck" itemId={deck.id} currentFolderId={deck.folderId} folders={folders} onMoved={reload} />
-                </span>
-              </div>
-            );
-          })}
+          {activeDecks.length === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">No decks here yet.</p>
+          )}
+          {activeDecks.map((deck) => (
+            <ItemCard key={deck.id} accentTag={deck.colorTag} to={`/decks/${deck.id}`} title={deck.name}>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                {deck._count.cards}
+              </span>
+              <ColorMenu type="deck" itemId={deck.id} colorTag={deck.colorTag} onChanged={reload} />
+              <ArchiveButton type="deck" itemId={deck.id} archived={false} onChanged={reload} />
+              <MoveToFolderMenu type="deck" itemId={deck.id} currentFolderId={deck.folderId} folders={folders} onMoved={reload} />
+            </ItemCard>
+          ))}
         </div>
-        <form onSubmit={createDeck} className="flex gap-2">
+        <ArchivedGroup
+          open={showArchived.decks}
+          count={archivedDecks.length}
+          onToggle={() => toggleArchived("decks")}
+        >
+          {archivedDecks.map((deck) => (
+            <ArchivedRow key={deck.id} to={`/decks/${deck.id}`} title={deck.name}>
+              <ArchiveButton type="deck" itemId={deck.id} archived onChanged={reload} />
+            </ArchivedRow>
+          ))}
+        </ArchivedGroup>
+        <form onSubmit={createDeck} className="mt-3 flex gap-2">
           <input
             type="text"
             placeholder="New deck name"
@@ -206,51 +225,53 @@ export function ClassResources({
           Practice quizzes
         </h2>
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          {sets.length === 0 && (
+          {activeSets.length === 0 && (
             <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">
               No practice quizzes here yet — create one below, generate one from a note, or ask the AI assistant.
             </p>
           )}
-          {sets.map((set) => {
+          {activeSets.map((set) => {
             const pct =
               set.lastAttempt && set.lastAttempt.total > 0
                 ? Math.round((set.lastAttempt.score / set.lastAttempt.total) * 100)
                 : null;
-            const accent = itemAccent(set.colorTag);
             return (
-              <div
-                key={set.id}
-                className="group relative flex items-center justify-between rounded-xl border border-slate-200 bg-white py-3.5 pl-5 pr-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
-              >
-                <div className={`absolute inset-y-1.5 left-1.5 w-1 rounded-full ${accent.className}`} style={accent.style} />
-                <Link to={`/practice/${set.id}`} className="min-w-0 flex-1 truncate font-medium text-slate-700 transition-colors group-hover:text-violet-700 dark:text-slate-200">
-                  {set.name}
-                </Link>
-                <span className="ml-2 flex items-center gap-1.5">
-                  {pct !== null && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        pct >= 80
-                          ? "bg-emerald-100 text-emerald-700"
-                          : pct >= 50
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {pct}%
-                    </span>
-                  )}
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                    {set.exerciseCount}
+              <ItemCard key={set.id} accentTag={set.colorTag} to={`/practice/${set.id}`} title={set.name}>
+                {pct !== null && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      pct >= 80
+                        ? "bg-emerald-100 text-emerald-700"
+                        : pct >= 50
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {pct}%
                   </span>
-                  <ColorMenu type="quiz" itemId={set.id} colorTag={set.colorTag} onChanged={reload} />
-                  <MoveToFolderMenu type="quiz" itemId={set.id} currentFolderId={folderId} folders={folders} onMoved={reload} />
+                )}
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                  {set.exerciseCount}
                 </span>
-              </div>
+                <ColorMenu type="quiz" itemId={set.id} colorTag={set.colorTag} onChanged={reload} />
+                <ArchiveButton type="quiz" itemId={set.id} archived={false} onChanged={reload} />
+                <MoveToFolderMenu type="quiz" itemId={set.id} currentFolderId={set.folderId} folders={folders} onMoved={reload} />
+              </ItemCard>
             );
           })}
         </div>
-        <form onSubmit={createSet} className="flex gap-2">
+        <ArchivedGroup
+          open={showArchived.quizzes}
+          count={archivedSets.length}
+          onToggle={() => toggleArchived("quizzes")}
+        >
+          {archivedSets.map((set) => (
+            <ArchivedRow key={set.id} to={`/practice/${set.id}`} title={set.name}>
+              <ArchiveButton type="quiz" itemId={set.id} archived onChanged={reload} />
+            </ArchivedRow>
+          ))}
+        </ArchivedGroup>
+        <form onSubmit={createSet} className="mt-3 flex gap-2">
           <input
             type="text"
             placeholder="New practice quiz name"
@@ -275,5 +296,68 @@ export function ClassResources({
         />
       )}
     </>
+  );
+}
+
+/** A live (non-archived) resource card: accent pill, a title link, and controls. */
+function ItemCard({
+  accentTag,
+  to,
+  title,
+  children,
+}: {
+  accentTag: string | null;
+  to: string;
+  title: string;
+  children: ReactNode;
+}) {
+  const accent = itemAccent(accentTag);
+  return (
+    <div className="group relative flex items-center justify-between rounded-xl border border-slate-200 bg-white py-3.5 pl-5 pr-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+      <div className={`absolute inset-y-1.5 left-1.5 w-1 rounded-full ${accent.className}`} style={accent.style} />
+      <Link to={to} className="min-w-0 flex-1 truncate font-medium text-slate-700 transition-colors group-hover:text-violet-700 dark:text-slate-200">
+        {title}
+      </Link>
+      <span className="ml-2 flex items-center gap-1.5">{children}</span>
+    </div>
+  );
+}
+
+/** Collapsible "Show archived (N)" region under a section. */
+function ArchivedGroup({
+  open,
+  count,
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  count: number;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="text-xs font-medium text-slate-400 transition-colors hover:text-violet-500"
+      >
+        {open ? "Hide" : "Show"} archived ({count})
+      </button>
+      {open && <div className="mt-2 grid gap-2 sm:grid-cols-2">{children}</div>}
+    </div>
+  );
+}
+
+/** A dimmed, dashed row for an archived item with its restore control. */
+function ArchivedRow({ to, title, children }: { to: string; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-2.5 pl-4 pr-2.5 dark:border-slate-700 dark:bg-slate-800/40">
+      <Link to={to} className="min-w-0 flex-1 truncate text-sm text-slate-500 dark:text-slate-400">
+        {title}
+      </Link>
+      <span className="ml-2 flex items-center gap-1.5">{children}</span>
+    </div>
   );
 }

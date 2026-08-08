@@ -311,7 +311,9 @@ function GroupAttachmentCard({
   return (
     <div
       className={`mt-1.5 inline-block max-w-[85%] rounded-xl border p-3 text-left ${
-        mine ? "border-violet-200 bg-violet-50" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+        mine
+          ? "border-violet-200 bg-violet-50 dark:border-violet-500/30 dark:bg-violet-500/10"
+          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
       }`}
     >
       <div className="flex items-center gap-2">

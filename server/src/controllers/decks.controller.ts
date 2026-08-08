@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { folderFilter, param } from "../lib/params.js";
+import { archivedFilter, folderFilter, param } from "../lib/params.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import { getOwnedClassFolder, getOwnedDeck, getOwnedFolder } from "../services/ownership.service.js";
@@ -9,7 +9,7 @@ export async function listDecks(req: Request, res: Response) {
   const classId = param(req, "classId");
   await getOwnedClassFolder(req.userId, classId);
   const decks = await prisma.deck.findMany({
-    where: { classFolderId: classId, ...folderFilter(req) },
+    where: { classFolderId: classId, ...folderFilter(req), ...archivedFilter(req) },
     include: { _count: { select: { cards: true } } },
     orderBy: { createdAt: "asc" },
   });
@@ -26,7 +26,7 @@ async function assertFolderInClass(userId: string, folderId: string, classId: st
 // All of a user's decks across every class — powers the games deck picker.
 export async function listAllDecks(req: Request, res: Response) {
   const decks = await prisma.deck.findMany({
-    where: { classFolder: { userId: req.userId } },
+    where: { archived: false, classFolder: { userId: req.userId, archived: false } },
     include: {
       _count: { select: { cards: true } },
       classFolder: { select: { name: true, colorTag: true } },
@@ -81,6 +81,7 @@ const updateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   folderId: z.string().nullish(),
   colorTag: z.string().max(40).nullish(),
+  archived: z.boolean().optional(),
 });
 
 export async function updateDeck(req: Request, res: Response) {

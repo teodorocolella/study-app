@@ -1,4 +1,4 @@
-import { BookOpen, BrainCircuit, Layers, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, BookOpen, BrainCircuit, Layers, Plus } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
@@ -12,14 +12,20 @@ import { CLASS_COLORS } from "../lib/classColors";
 export function ClassesPage() {
   const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [archivedClasses, setArchivedClasses] = useState<ClassFolder[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [newClassName, setNewClassName] = useState("");
   const [selectedColor, setSelectedColor] = useState(CLASS_COLORS[0].id);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const data = await api.get<DashboardSummary>("/dashboard/summary");
+    const [data, archived] = await Promise.all([
+      api.get<DashboardSummary>("/dashboard/summary"),
+      api.get<ClassFolder[]>("/classes?archived=1"),
+    ]);
     setSummary(data);
+    setArchivedClasses(archived);
   }
 
   useEffect(() => {
@@ -27,6 +33,15 @@ export function ClassesPage() {
   }, []);
 
   useAssistantRefresh(() => void load().catch(() => {}));
+
+  async function setArchived(classId: string, archived: boolean) {
+    try {
+      await api.patch(`/classes/${classId}`, { archived });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to update class");
+    }
+  }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -50,21 +65,20 @@ export function ClassesPage() {
     <AppShell>
       <h1 className="font-display mb-6 text-2xl font-semibold text-slate-800 dark:text-slate-100">Your classes</h1>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
         {summary?.classes.length === 0 && (
           <p className="col-span-2 text-sm text-slate-500 dark:text-slate-400">
             No classes yet — create your first one below.
           </p>
         )}
-        {summary?.classes.map((c) => {
-          return (
+        {summary?.classes.map((c) => (
+          <div key={c.classId} className="group relative">
             <Link
-              key={c.classId}
               to={`/classes/${c.classId}`}
-              className="group flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <ClassLogo colorTag={c.colorTag} />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 pr-6">
                 <div className="flex items-center justify-between">
                   <span className="truncate font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
@@ -91,9 +105,55 @@ export function ClassesPage() {
                 </div>
               </div>
             </Link>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => void setArchived(c.classId, true)}
+              title="Archive class"
+              className="absolute right-2 top-2 rounded-md p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-violet-600 group-hover:opacity-100 dark:hover:bg-slate-700"
+            >
+              <Archive className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
       </div>
+
+      {archivedClasses.length > 0 && (
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            className="text-xs font-medium text-slate-400 transition-colors hover:text-violet-500"
+          >
+            {showArchived ? "Hide" : "Show"} archived classes ({archivedClasses.length})
+          </button>
+          {showArchived && (
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {archivedClasses.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-2.5 pl-3 pr-2.5 dark:border-slate-700 dark:bg-slate-800/40"
+                >
+                  <Link
+                    to={`/classes/${c.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-sm text-slate-500 dark:text-slate-400"
+                  >
+                    <ClassLogo colorTag={c.colorTag} size={28} />
+                    <span className="truncate">{c.name}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void setArchived(c.id, false)}
+                    title="Unarchive class"
+                    className="ml-2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-violet-600 dark:hover:bg-slate-700"
+                  >
+                    <ArchiveRestore className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleCreate} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
         <p className="mb-3 text-sm font-medium text-slate-600 dark:text-slate-300">Add a new class</p>

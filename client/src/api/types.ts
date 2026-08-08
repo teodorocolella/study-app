@@ -2,6 +2,7 @@ export interface ClassFolder {
   id: string;
   name: string;
   colorTag: string | null;
+  archived: boolean;
   userId: string;
   createdAt: string;
 }
@@ -10,6 +11,7 @@ export interface Folder {
   id: string;
   name: string;
   classFolderId: string;
+  archived: boolean;
 }
 
 export interface FolderSummary extends Folder {
@@ -24,6 +26,7 @@ export interface Note {
   contentHtml: string;
   aiSummary: string | null;
   colorTag: string | null;
+  archived: boolean;
   classFolderId: string;
   folderId: string | null;
   createdAt: string;
@@ -34,6 +37,7 @@ export interface Deck {
   id: string;
   name: string;
   colorTag: string | null;
+  archived: boolean;
   classFolderId: string;
   folderId: string | null;
   createdAt: string;
@@ -77,6 +81,8 @@ export interface ExerciseSetSummary {
   id: string;
   name: string;
   colorTag: string | null;
+  archived: boolean;
+  folderId: string | null;
   classFolderId: string;
   createdAt: string;
   exerciseCount: number;
