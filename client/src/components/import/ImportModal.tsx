@@ -35,8 +35,9 @@ function readFileAsDataUrl(file: File): Promise<string> {
 export function ImportModal({ classId, onClose }: { classId?: string; onClose: () => void }) {
   const [classes, setClasses] = useState<ClassFolder[]>([]);
   const [selectedClassId, setSelectedClassId] = useState(classId ?? "");
-  const [tab, setTab] = useState<"text" | "file">("text");
+  const [tab, setTab] = useState<"text" | "link" | "file">("text");
   const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
   const [makeDeck, setMakeDeck] = useState(true);
@@ -90,7 +91,7 @@ export function ImportModal({ classId, onClose }: { classId?: string; onClose: (
     try {
       const body = {
         classId: selectedClassId,
-        ...(tab === "text" ? { text } : { dataUrl }),
+        ...(tab === "text" ? { text } : tab === "link" ? { url: url.trim() } : { dataUrl }),
         makeDeck,
         makeQuiz,
       };
@@ -102,7 +103,13 @@ export function ImportModal({ classId, onClose }: { classId?: string; onClose: (
     }
   }
 
-  const canImport = selectedClassId && (tab === "text" ? text.trim().length > 20 : !!dataUrl);
+  const canImport =
+    !!selectedClassId &&
+    (tab === "text"
+      ? text.trim().length > 20
+      : tab === "link"
+        ? /^https?:\/\/\S+/i.test(url.trim())
+        : !!dataUrl);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
@@ -117,7 +124,8 @@ export function ImportModal({ classId, onClose }: { classId?: string; onClose: (
               Import notes
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Paste text or upload a photo/PDF — Claude turns it into a note, flashcards, and a quiz.
+              Paste text, a link (Google Doc, web page…), or a photo/PDF — Claude turns it into a
+              note, flashcards, and a quiz.
             </p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -165,6 +173,9 @@ export function ImportModal({ classId, onClose }: { classId?: string; onClose: (
               <TabButton active={tab === "text"} onClick={() => setTab("text")}>
                 Paste text
               </TabButton>
+              <TabButton active={tab === "link"} onClick={() => setTab("link")}>
+                Link
+              </TabButton>
               <TabButton active={tab === "file"} onClick={() => setTab("file")}>
                 Photo or PDF
               </TabButton>
@@ -178,6 +189,20 @@ export function ImportModal({ classId, onClose }: { classId?: string; onClose: (
                 placeholder="Paste your notes, a textbook passage, or a lecture transcript…"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900"
               />
+            ) : tab === "link" ? (
+              <div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://docs.google.com/document/d/…"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900"
+                />
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Paste a Google Doc, Slides, Sheet, or any web page link. Google files must be
+                  shared as “Anyone with the link.”
+                </p>
+              </div>
             ) : (
               <label className="flex h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-sm text-slate-500 hover:border-violet-300 hover:text-violet-600 dark:border-slate-700">
                 <Upload className="h-6 w-6" />

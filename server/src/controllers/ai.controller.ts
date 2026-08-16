@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { paragraphsToHtml, stripHtml } from "../lib/html.js";
+import { fetchTextFromUrl } from "../lib/importUrl.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { prisma } from "../prisma.js";
 import { runAssistant, type AssistantEvent } from "../services/assistant.service.js";
@@ -139,6 +140,7 @@ const importSchema = z
   .object({
     classId: z.string(),
     text: z.string().max(50000).optional(),
+    url: z.string().max(2000).optional(),
     dataUrl: z
       .string()
       .max(12_000_000)
@@ -148,8 +150,8 @@ const importSchema = z
     makeQuiz: z.boolean().default(true),
     quizTypes: z.array(z.enum(EXERCISE_TYPES)).min(1).default([...EXERCISE_TYPES]),
   })
-  .refine((d) => (d.text && d.text.trim()) || d.dataUrl, {
-    message: "Paste some text or upload a file",
+  .refine((d) => (d.text && d.text.trim()) || d.dataUrl || (d.url && d.url.trim()), {
+    message: "Paste some text, upload a file, or add a link",
   });
 
 function sourceFromInput(text?: string, dataUrl?: string): ImportSource {
@@ -174,7 +176,7 @@ export async function postImportContent(req: Request, res: Response) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
-  const { classId, text, dataUrl, makeDeck, makeQuiz, quizTypes } = parsed.data;
+  const { classId, text, url, dataUrl, makeDeck, makeQuiz, quizTypes } = parsed.data;
   const classFolder = await getOwnedClassFolder(req.userId, classId);
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
@@ -183,7 +185,9 @@ export async function postImportContent(req: Request, res: Response) {
   const grade = user?.gradeLevel;
 
   try {
-    const source = sourceFromInput(text, dataUrl);
+    const source: ImportSource = url
+      ? { kind: "text", text: await fetchTextFromUrl(url) }
+      : sourceFromInput(text, dataUrl);
     const { title, content } = await extractNoteFromSource(source, grade);
 
     const note = await prisma.note.create({
