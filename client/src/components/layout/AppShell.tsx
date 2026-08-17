@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebarWidth = collapsed ? "w-[68px]" : "w-60";
 
   return (
-    <div className="min-h-screen bg-[#f6f5fb] dark:bg-[#0f0e17] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_55%)]">
+    <div className="min-h-screen bg-[#f3f8f8] dark:bg-[#0a1418] bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_55%)]">
       {/* Mobile top bar */}
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-4 py-3 backdrop-blur-md md:hidden">
         <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="text-slate-600 dark:text-slate-300">

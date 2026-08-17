@@ -93,7 +93,7 @@ export function WelcomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f5fb] dark:bg-[#0f0e17] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.1),transparent_55%)]">
+    <div className="min-h-screen bg-[#f3f8f8] dark:bg-[#0a1418] bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.1),transparent_55%)]">
       <div className="mx-auto max-w-3xl px-6 py-14">
         <div className="text-center">
           <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-violet-300">

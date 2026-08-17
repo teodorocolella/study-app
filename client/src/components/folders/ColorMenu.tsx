@@ -101,7 +101,7 @@ export function ColorMenu({
             <input
               ref={customRef}
               type="color"
-              value={custom ? colorTag : "#7c3aed"}
+              value={custom ? colorTag : "#0d9488"}
               onChange={(e) => void setColor(e.target.value)}
               className="sr-only"
               tabIndex={-1}

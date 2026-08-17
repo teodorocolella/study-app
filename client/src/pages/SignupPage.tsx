@@ -1,7 +1,8 @@
-import { GraduationCap, Lock, Mail, User } from "lucide-react";
+import { GraduationCap, Mail, User } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
+import { PasswordInput } from "../components/auth/PasswordInput";
 import { SocialSignIn } from "../components/auth/SocialSignIn";
 import { useAuth } from "../hooks/useAuth";
 
@@ -29,7 +30,7 @@ export function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f6f5fb] dark:bg-[#0f0e17] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.14),transparent_55%)] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#f3f8f8] dark:bg-[#0a1418] bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.14),transparent_55%)] px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="mb-8 flex flex-col items-center">
           <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-300">
@@ -69,17 +70,7 @@ export function SignupPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Password</label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 py-2.5 pl-9 pr-3 text-sm transition-colors focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-                />
-              </div>
+              <PasswordInput value={password} onChange={setPassword} minLength={8} autoComplete="new-password" />
               <p className="mt-1.5 text-xs text-slate-400">At least 8 characters.</p>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}

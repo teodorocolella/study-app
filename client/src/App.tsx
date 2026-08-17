@@ -7,7 +7,9 @@ import { trackPageView } from "./lib/analytics";
 // Entry pages load eagerly so the first paint is instant; everything behind
 // auth is code-split so heavy deps (TipTap, KaTeX, games) load on demand.
 import { LandingPage } from "./pages/LandingPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SignupPage } from "./pages/SignupPage";
 
 // Helper: lazy-load a module's named export as a default for React.lazy.
@@ -83,6 +85,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/welcome" element={protect(<WelcomePage />)} />
           <Route path="/dashboard" element={protect(<DashboardPage />)} />
           <Route path="/classes" element={protect(<ClassesPage />)} />

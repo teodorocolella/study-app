@@ -80,7 +80,7 @@ export function LandingPage() {
   }, [loading, user, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#f6f5fb] dark:bg-[#0f0e17] bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.1),transparent_55%)]">
+    <div className="min-h-screen bg-[#f3f8f8] dark:bg-[#0a1418] bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.1),transparent_55%)]">
       <header className="border-b border-slate-200/70 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">

@@ -27,6 +27,25 @@ export async function sendEmail(to: string, subject: string, html: string) {
   });
 }
 
+export function passwordResetEmailHtml(displayName: string, resetUrl: string) {
+  return `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1e293b">
+    <div style="background:linear-gradient(135deg,#0d9488,#2563eb);border-radius:16px;padding:28px;color:#fff">
+      <h1 style="margin:0 0 8px;font-size:22px">Reset your password</h1>
+      <p style="margin:0;font-size:15px;color:#ccfbf1">Hi ${displayName} — someone asked to reset the password for this Study Hub account.</p>
+    </div>
+    <div style="padding:24px 4px">
+      <p style="margin:0 0 20px">If that was you, click the button below. The link works once and expires in 1 hour.</p>
+      <a href="${resetUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#0d9488,#2563eb);color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px">
+        Choose a new password
+      </a>
+      <p style="margin:24px 0 0;font-size:13px;color:#64748b">Didn't ask for this? You can ignore this email — your password won't change.</p>
+      <p style="margin:16px 0 0;font-size:12px;color:#94a3b8">Study Hub · your AI-powered study companion</p>
+    </div>
+  </div>`;
+}
+
 export function reminderEmailHtml(displayName: string, dueCount: number, streak: number) {
   const streakLine =
     streak > 0

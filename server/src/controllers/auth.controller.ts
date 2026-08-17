@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "../env.js";
+import { emailEnabled, passwordResetEmailHtml, sendEmail } from "../services/email.service.js";
 import { COLLEGE_GRADE, currentGrade } from "../lib/gradeLevel.js";
 import { param } from "../lib/params.js";
 import { prisma } from "../prisma.js";
@@ -120,6 +121,73 @@ export async function login(req: Request, res: Response) {
     accessToken,
     user: publicUser(user),
   });
+}
+
+const forgotSchema = z.object({ email: z.string().email() });
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function forgotPassword(req: Request, res: Response) {
+  const parsed = forgotSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter a valid email address" });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (user) {
+    // Invalidate any older links, then mint a fresh single-use token.
+    await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
+    const token = randomBytes(32).toString("hex");
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    });
+    const resetUrl = `${env.APP_URL}/reset-password?token=${token}`;
+    if (!emailEnabled) {
+      // No SMTP configured (local dev): surface the link so resets still work.
+      console.log(`[email disabled] Password reset link for ${user.email}: ${resetUrl}`);
+    }
+    await sendEmail(user.email, "Reset your Study Hub password", passwordResetEmailHtml(user.displayName, resetUrl)).catch(
+      (err) => console.error("Password reset email failed:", err),
+    );
+  }
+
+  // Same response whether or not the account exists, so emails can't be probed.
+  res.json({ ok: true });
+}
+
+const resetSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(8),
+});
+
+export async function resetPassword(req: Request, res: Response) {
+  const parsed = resetSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(parsed.data.token) },
+  });
+  if (!record || record.usedAt || record.expiresAt < new Date()) {
+    res.status(400).json({ error: "That reset link is invalid or has expired. Request a new one." });
+    return;
+  }
+
+  const passwordHash = await hashPassword(parsed.data.password);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+    prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    // Log out every existing session — whoever holds the old password loses access.
+    prisma.refreshToken.deleteMany({ where: { userId: record.userId } }),
+  ]);
+
+  res.json({ ok: true });
 }
 
 export async function refresh(req: Request, res: Response) {

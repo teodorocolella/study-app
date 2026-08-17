@@ -1,7 +1,7 @@
 import { Eraser, Loader2, Pen, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 
-const COLORS = ["#1e1b2e", "#7c3aed", "#dc2626", "#2563eb", "#16a34a", "#ea580c"];
+const COLORS = ["#1e1b2e", "#0d9488", "#dc2626", "#2563eb", "#16a34a", "#ea580c"];
 
 /** A simple freehand sketch canvas that returns a PNG data URL. */
 export function DrawingModal({

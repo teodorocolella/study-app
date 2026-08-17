@@ -20,6 +20,7 @@ model User {
 
   classFolders  ClassFolder[]
   refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   cardProgress  CardProgress[]
   reviewLogs    ReviewLog[]
   sentMessages     Message[]        @relation("SentMessages")
@@ -109,6 +110,20 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// One-time "forgot password" token, emailed as a link. Only the hash is
+// stored; usedAt marks it spent so a link can't be replayed.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }

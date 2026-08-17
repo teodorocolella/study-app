@@ -21,8 +21,8 @@ export default defineConfig({
         name: 'Study Hub',
         short_name: 'Study Hub',
         description: 'Notes, spaced-repetition flashcards, quizzes, games, and a Claude-powered study assistant.',
-        theme_color: '#7c3aed',
-        background_color: '#0f0e17',
+        theme_color: '#0d9488',
+        background_color: '#0a1418',
         display: 'standalone',
         start_url: '/dashboard',
         icons: [

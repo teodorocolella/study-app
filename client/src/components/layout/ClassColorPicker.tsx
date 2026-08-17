@@ -46,7 +46,7 @@ export function ClassColorPicker({
       <input
         ref={inputRef}
         type="color"
-        value={custom ? value : "#7c3aed"}
+        value={custom ? value : "#0d9488"}
         onChange={(e) => onChange(e.target.value)}
         className="sr-only"
         aria-hidden="true"

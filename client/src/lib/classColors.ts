@@ -10,8 +10,10 @@ export interface ClassColor {
 
 export const CLASS_COLORS: ClassColor[] = [
   {
+    // id stays "violet" for classes saved before the ocean rebrand — the
+    // violet-* tokens now render as the teal brand color.
     id: "violet",
-    label: "Violet",
+    label: "Teal",
     dot: "bg-violet-500",
     gradient: "from-violet-500 to-indigo-600",
     soft: "bg-violet-50",
@@ -28,13 +30,14 @@ export const CLASS_COLORS: ClassColor[] = [
     ring: "ring-sky-200",
   },
   {
+    // Lime, so it stays distinct from the teal brand swatch above.
     id: "emerald",
-    label: "Emerald",
-    dot: "bg-emerald-500",
-    gradient: "from-emerald-400 to-teal-600",
-    soft: "bg-emerald-50",
-    text: "text-emerald-700",
-    ring: "ring-emerald-200",
+    label: "Lime",
+    dot: "bg-lime-500",
+    gradient: "from-lime-400 to-green-600",
+    soft: "bg-lime-50",
+    text: "text-lime-700",
+    ring: "ring-lime-200",
   },
   {
     id: "amber",

@@ -66,6 +66,10 @@ export function NoteEditorPage() {
     editorProps: {
       attributes: {
         class: "prose prose-sm max-w-none focus:outline-none min-h-[55vh] p-4",
+        // Browser-native spell check: typos get the standard red squiggle.
+        spellcheck: "true",
+        autocorrect: "on",
+        autocapitalize: "sentences",
       },
     },
     onUpdate: ({ editor }) => {

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  forgotPassword,
   getAuthProviders,
   login,
   logout,
@@ -7,6 +8,7 @@ import {
   oauthCallback,
   oauthStart,
   refresh,
+  resetPassword,
   signup,
   updateProfile,
 } from "../controllers/auth.controller.js";
@@ -17,6 +19,8 @@ export const authRouter = Router();
 
 authRouter.post("/signup", authRateLimiter, signup);
 authRouter.post("/login", authRateLimiter, login);
+authRouter.post("/forgot-password", authRateLimiter, forgotPassword);
+authRouter.post("/reset-password", authRateLimiter, resetPassword);
 authRouter.post("/refresh", refresh);
 authRouter.post("/logout", logout);
 authRouter.get("/me", requireAuth, me);
