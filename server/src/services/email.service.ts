@@ -14,6 +14,25 @@ const transport = emailEnabled
     })
   : null;
 
+// Startup self-check: put an unmissable email status line in the server logs,
+// so a broken SMTP config is diagnosed there instead of failing silently.
+if (transport) {
+  console.log(`Email: configured — ${env.SMTP_HOST}:${env.SMTP_PORT} as ${env.SMTP_USER}. Verifying connection…`);
+  transport.verify().then(
+    () => console.log("Email: SMTP connection verified — sending is ready."),
+    (err) =>
+      console.error(
+        `Email: SMTP verification FAILED — emails will NOT send. ${err instanceof Error ? err.message : String(err)}` +
+          ` (If using a Gmail app password, remove the spaces and make sure 2-Step Verification is on.)`,
+      ),
+  );
+} else {
+  const missing = [!env.SMTP_HOST && "SMTP_HOST", !env.SMTP_USER && "SMTP_USER", !env.SMTP_PASS && "SMTP_PASS"]
+    .filter(Boolean)
+    .join(", ");
+  console.log(`Email: disabled (missing ${missing}) — reminder/reset emails will be logged, not sent.`);
+}
+
 export async function sendEmail(to: string, subject: string, html: string) {
   if (!transport) {
     console.log(`[email disabled] Would send to ${to}: ${subject}`);
@@ -25,6 +44,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
     subject,
     html,
   });
+  console.log(`Email sent to ${to}: ${subject}`);
 }
 
 export function passwordResetEmailHtml(displayName: string, resetUrl: string) {
