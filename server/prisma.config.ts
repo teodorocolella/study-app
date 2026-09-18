@@ -1,15 +1,19 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// IMPORTANT: don't use prisma's `env()` helper for the datasource url here.
-// It throws (PrismaConfigEnvError) if DATABASE_URL is unset, and the config is
-// loaded by *every* prisma command — including `prisma generate` during the
-// build, where there is no database (codegen never connects). That breaks the
-// deploy build. Read it plainly and fall back to a harmless placeholder; the
-// real DATABASE_URL is present in the environment at runtime, when migrations
-// actually run at server start.
-const DATABASE_URL =
-  process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+// `prisma generate` (run during the build) does pure code generation and never
+// connects to a database, so it must not require DATABASE_URL. Every other
+// command (migrate deploy, etc.) genuinely needs a real database, so fail there
+// with a clear message instead of silently trying a placeholder host.
+const isGenerate = process.argv.includes("generate");
+const url = process.env.DATABASE_URL;
+
+if (!url && !isGenerate) {
+  throw new Error(
+    "DATABASE_URL is not set. Add it in your host's environment settings (on Render: the " +
+      "web service → Environment → the Postgres connection string) before running migrations.",
+  );
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -17,6 +21,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: DATABASE_URL,
+    // Placeholder only reached during codegen, which never connects.
+    url: url || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });
