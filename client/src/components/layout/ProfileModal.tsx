@@ -22,26 +22,30 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [pushAvailable, setPushAvailable] = useState(false);
+  const [pushSupported] = useState(() => isPushSupported());
+  const [pushConfigured, setPushConfigured] = useState(false);
   const [pushPublicKey, setPushPublicKey] = useState<string | null>(null);
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isPushSupported()) return;
+    if (!pushSupported) return;
     Promise.all([getPushConfig(), getExistingSubscription()])
       .then(([config, existing]) => {
-        if (config.enabled && config.publicKey) {
-          setPushAvailable(true);
-          setPushPublicKey(config.publicKey);
-          setPushOn(!!existing);
+        setPushConfigured(config.enabled);
+        setPushPublicKey(config.publicKey);
+        setPushOn(!!existing);
+        if (config.enabled && typeof Notification !== "undefined" && Notification.permission === "denied") {
+          setPushMsg("Notifications are blocked. Allow them for this site in your browser settings, then try again.");
         }
       })
       .catch(() => {});
-  }, []);
+  }, [pushSupported]);
 
   async function toggleNotifications() {
     setPushBusy(true);
+    setPushMsg(null);
     try {
       if (pushOn) {
         await unsubscribeFromPush();
@@ -49,7 +53,16 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       } else if (pushPublicKey) {
         const ok = await subscribeToPush(pushPublicKey);
         setPushOn(ok);
+        if (!ok) {
+          setPushMsg(
+            typeof Notification !== "undefined" && Notification.permission === "denied"
+              ? "Notifications are blocked. Allow them for this site in your browser settings, then try again."
+              : "Couldn't turn on notifications — permission wasn't granted.",
+          );
+        }
       }
+    } catch {
+      setPushMsg("Something went wrong turning on notifications. Please try again.");
     } finally {
       setPushBusy(false);
     }
@@ -140,28 +153,36 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           Used only to tailor your recommendations. Advances automatically each school year.
         </p>
 
-        {pushAvailable && (
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-700">
-            <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-              {pushOn ? <Bell className="h-4 w-4 text-violet-500" /> : <BellOff className="h-4 w-4 text-slate-400" />}
-              Message notifications
-            </span>
-            <button
-              type="button"
-              onClick={() => void toggleNotifications()}
-              disabled={pushBusy}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                pushOn ? "bg-violet-600" : "bg-slate-300 dark:bg-slate-600"
-              }`}
-              aria-pressed={pushOn}
-              aria-label="Toggle message notifications"
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                  pushOn ? "translate-x-5" : "translate-x-0.5"
+        {pushSupported && (
+          <div className="mb-4 rounded-lg border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                {pushOn ? <Bell className="h-4 w-4 text-violet-500" /> : <BellOff className="h-4 w-4 text-slate-400" />}
+                Message notifications
+              </span>
+              <button
+                type="button"
+                onClick={() => void toggleNotifications()}
+                disabled={pushBusy || !pushConfigured}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  pushOn ? "bg-violet-600" : "bg-slate-300 dark:bg-slate-600"
                 }`}
-              />
-            </button>
+                aria-pressed={pushOn}
+                aria-label="Toggle message notifications"
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    pushOn ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+            {!pushConfigured && (
+              <p className="mt-1.5 text-xs text-slate-400">
+                Notifications aren't set up on this server yet.
+              </p>
+            )}
+            {pushMsg && <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">{pushMsg}</p>}
           </div>
         )}
 

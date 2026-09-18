@@ -7,6 +7,7 @@ import {
   Library,
   LogOut,
   Menu,
+  MessageSquare,
   Moon,
   Sun,
   Users,
@@ -37,7 +38,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const [dmUnread, setDmUnread] = useState(0);
+  const [groupUnread, setGroupUnread] = useState(0);
+  const unread = dmUnread + groupUnread;
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === "1");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [gradePromptOpen, setGradePromptOpen] = useState(false);
@@ -74,7 +77,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         api.get<{ count: number }>("/messages/unread-count").catch(() => ({ count: 0 })),
         api.get<{ count: number }>("/groups/unread-count").catch(() => ({ count: 0 })),
       ]).then(([direct, groups]) => {
-        if (!cancelled) setUnread(direct.count + groups.count);
+        if (!cancelled) {
+          setDmUnread(direct.count);
+          setGroupUnread(groups.count);
+        }
       });
     void load();
     const interval = setInterval(load, 60_000);
@@ -88,7 +94,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/classes", label: "Classes", icon: BookOpen },
     { to: "/games", label: "Games", icon: Gamepad2 },
-    { to: "/groups", label: "Study Groups", icon: Users, badge: unread },
+    { to: "/direct", label: "Messages", icon: MessageSquare, badge: dmUnread },
+    { to: "/groups", label: "Study Groups", icon: Users, badge: groupUnread },
     { to: "/reference", label: "Reference", icon: Library },
   ];
 
@@ -107,8 +114,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
           <span className="font-display font-semibold text-slate-800 dark:text-slate-100">Study Hub</span>
         </Link>
-        <Link to="/groups" className="relative text-slate-600 dark:text-slate-300" aria-label="Study Groups">
-          <Users className="h-5 w-5" />
+        <Link to="/direct" className="relative text-slate-600 dark:text-slate-300" aria-label="Messages">
+          <MessageSquare className="h-5 w-5" />
           {unread > 0 && (
             <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-bold text-white">
               {unread > 9 ? "9+" : unread}

@@ -8,6 +8,7 @@ import { EventEmitter } from "node:events";
 
 export type LiveEvent =
   | { type: "message"; message: unknown }
+  | { type: "message-updated"; message: unknown }
   | { type: "typing"; userId: string; name: string };
 
 const emitter = new EventEmitter();

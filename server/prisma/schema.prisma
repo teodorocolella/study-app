@@ -93,10 +93,12 @@ model Message {
   recipientId    String
   recipient      User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
   body           String?   @db.Text
-  attachmentType String? // "note" | "deck"
+  attachmentType String? // "note" | "deck" | "exercise_set"
   attachmentJson String?   @db.Text
   createdAt      DateTime  @default(now())
   readAt         DateTime?
+  editedAt       DateTime? // set when the sender edits the text
+  deletedAt      DateTime? // set when the sender unsends; body/attachment are cleared
 
   @@index([recipientId, readAt])
   @@index([senderId, createdAt])

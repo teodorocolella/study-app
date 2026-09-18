@@ -1,11 +1,14 @@
 import {
+  BrainCircuit,
   Check,
   FileText,
   Layers,
   Loader2,
   MessageSquare,
+  Pencil,
   Plus,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -21,15 +24,31 @@ import type {
 } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
 import { Avatar } from "../components/layout/Avatar";
+import { UserPicker } from "../components/messaging/UserPicker";
 import { useAuth } from "../hooks/useAuth";
 import { useTypingUsers } from "../hooks/useTypingUsers";
 
-type LiveEvent = { type: "message"; message: Message } | { type: "typing"; userId: string; name: string };
+type LiveEvent =
+  | { type: "message"; message: Message }
+  | { type: "message-updated"; message: Message }
+  | { type: "typing"; userId: string; name: string };
 
 const TYPING_THROTTLE_MS = 2000;
 
-function upsertMessage(prev: Message[], msg: Message): Message[] {
-  return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
+// Add a new message, or replace an existing one (edits/unsends arrive by id).
+function applyMessage(prev: Message[], msg: Message): Message[] {
+  return prev.some((m) => m.id === msg.id)
+    ? prev.map((m) => (m.id === msg.id ? msg : m))
+    : [...prev, msg];
+}
+
+/** Short preview of a conversation's last message for the sidebar list. */
+function previewText(m: Message): string {
+  if (m.deleted) return "Unsent a message";
+  if (m.body) return m.body;
+  if (m.attachment?.type === "deck") return "Shared a deck";
+  if (m.attachment?.type === "exercise_set") return "Shared a quiz";
+  return "Shared a note";
 }
 
 export function MessagesPage() {
@@ -105,8 +124,8 @@ export function MessagesPage() {
         <div className="space-y-2">
           {conversations.length === 0 && !composing && (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 text-sm text-slate-500 dark:text-slate-400">
-              No conversations yet. Message a classmate by their Study Hub email to share
-              notes and flashcard decks.
+              No conversations yet. Message a classmate by name to share notes, flashcard
+              decks, and quizzes.
             </div>
           )}
           {conversations.map((c) => (
@@ -125,8 +144,7 @@ export function MessagesPage() {
                   {c.partner.displayName}
                 </span>
                 <span className="block truncate text-xs text-slate-400">
-                  {c.lastMessage.body ??
-                    (c.lastMessage.attachment?.type === "deck" ? "Shared a deck" : "Shared a note")}
+                  {previewText(c.lastMessage)}
                 </span>
               </span>
               {c.unreadCount > 0 && (
@@ -166,19 +184,19 @@ function ComposePanel({
   onSent: (partner: MessagePartner) => void;
   onCancel: () => void;
 }) {
-  const [email, setEmail] = useState("");
+  const [recipient, setRecipient] = useState<MessagePartner | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !body.trim()) return;
+    if (!recipient || !body.trim()) return;
     setSending(true);
     setError(null);
     try {
       const sent = await api.post<Message & { recipient: MessagePartner }>("/messages", {
-        recipientEmail: email.trim(),
+        recipientId: recipient.id,
         body: body.trim(),
       });
       onSent(sent.recipient);
@@ -197,13 +215,7 @@ function ComposePanel({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <input
-        type="email"
-        placeholder="Classmate's Study Hub email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-      />
+      <UserPicker selected={recipient} onSelect={setRecipient} autoFocus />
       <textarea
         placeholder="Write a message…"
         value={body}
@@ -214,7 +226,7 @@ function ComposePanel({
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
-        disabled={sending || !email.trim() || !body.trim()}
+        disabled={sending || !recipient || !body.trim()}
         className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
       >
         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -245,10 +257,10 @@ function ThreadPanel({
   useEffect(() => {
     const close = api.liveStream(`/messages/stream/${thread.partner.id}`, (raw) => {
       const event = raw as LiveEvent;
-      if (event.type === "message") {
-        setMessages((prev) => upsertMessage(prev, event.message));
+      if (event.type === "message" || event.type === "message-updated") {
+        setMessages((prev) => applyMessage(prev, event.message));
         onConversationsChanged();
-        if (event.message.senderId !== myUserId) {
+        if (event.type === "message" && event.message.senderId !== myUserId) {
           void api.post(`/messages/with/${thread.partner.id}/read`).catch(() => {});
         }
       } else if (event.type === "typing" && event.userId !== myUserId) {
@@ -270,8 +282,8 @@ function ThreadPanel({
     setSending(true);
     setError(null);
     try {
-      const sent = await api.post<Message>("/messages", { recipientEmail: thread.partner.email, body });
-      setMessages((prev) => upsertMessage(prev, sent));
+      const sent = await api.post<Message>("/messages", { recipientId: thread.partner.id, body });
+      setMessages((prev) => applyMessage(prev, sent));
       setInput("");
       onConversationsChanged();
     } catch (err) {
@@ -302,7 +314,15 @@ function ThreadPanel({
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} mine={m.senderId === myUserId} />
+          <MessageBubble
+            key={m.id}
+            message={m}
+            mine={m.senderId === myUserId}
+            onChanged={(updated) => {
+              setMessages((prev) => applyMessage(prev, updated));
+              onConversationsChanged();
+            }}
+          />
         ))}
       </div>
 
@@ -332,22 +352,142 @@ function ThreadPanel({
   );
 }
 
-function MessageBubble({ message, mine }: { message: Message; mine: boolean }) {
-  return (
-    <div className={mine ? "text-right" : "text-left"}>
-      {message.body && (
-        <span
-          className={`inline-block max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-sm ${
-            mine
-              ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white"
-              : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
-          }`}
-        >
-          {message.body}
+function MessageBubble({
+  message,
+  mine,
+  onChanged,
+}: {
+  message: Message;
+  mine: boolean;
+  onChanged: (updated: Message) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.body ?? "");
+  const [busy, setBusy] = useState(false);
+
+  // Unsent message: a small neutral tombstone, no actions.
+  if (message.deleted) {
+    return (
+      <div className={mine ? "text-right" : "text-left"}>
+        <span className="inline-block rounded-2xl bg-slate-100 px-3.5 py-2 text-sm italic text-slate-400 dark:bg-slate-700/50">
+          {mine ? "You unsent a message" : "This message was unsent"}
         </span>
+      </div>
+    );
+  }
+
+  async function saveEdit() {
+    const body = draft.trim();
+    if (!body || body === message.body) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await api.patch<Message>(`/messages/${message.id}`, { body });
+      onChanged(updated);
+      setEditing(false);
+    } catch {
+      // keep the editor open on failure
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unsend() {
+    if (!confirm("Unsend this message? It'll be removed for both of you.")) return;
+    setBusy(true);
+    try {
+      const updated = await api.delete<Message>(`/messages/${message.id}`);
+      onChanged(updated);
+    } catch {
+      // ignore
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canEdit = mine && !!message.body; // only text messages are editable
+
+  return (
+    <div className={`group ${mine ? "text-right" : "text-left"}`}>
+      {editing ? (
+        <div className="inline-flex w-full max-w-[85%] flex-col gap-1.5">
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={2}
+            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2 text-left text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100 dark:bg-slate-900"
+          />
+          <div className="flex justify-end gap-2 text-xs">
+            <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600">
+              Cancel
+            </button>
+            <button
+              onClick={() => void saveEdit()}
+              disabled={busy}
+              className="font-semibold text-violet-600 hover:text-violet-700 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        message.body && (
+          <div className={`flex items-center gap-1.5 ${mine ? "flex-row-reverse" : "flex-row"}`}>
+            <span
+              className={`inline-block max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-left text-sm ${
+                mine
+                  ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white"
+                  : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {message.body}
+              {message.editedAt && <span className="ml-1.5 text-[10px] opacity-70">(edited)</span>}
+            </span>
+            {mine && (
+              <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      setDraft(message.body ?? "");
+                      setEditing(true);
+                    }}
+                    disabled={busy}
+                    title="Edit"
+                    className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-violet-600 dark:hover:bg-slate-700"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => void unsend()}
+                  disabled={busy}
+                  title="Unsend"
+                  className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            )}
+          </div>
+        )
       )}
       {message.attachment && (
-        <AttachmentCard messageId={message.id} attachment={message.attachment} mine={mine} />
+        <div className={`flex ${mine ? "flex-row-reverse" : "flex-row"} items-start gap-1.5`}>
+          <AttachmentCard messageId={message.id} attachment={message.attachment} mine={mine} />
+          {mine && (
+            <button
+              onClick={() => void unsend()}
+              disabled={busy}
+              title="Unsend"
+              className="mt-2 shrink-0 rounded-md p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-slate-700"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -368,12 +508,15 @@ function AttachmentCard({
   const [saved, setSaved] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const isDeck = attachment.type === "deck";
-  const title = isDeck ? attachment.name : attachment.title;
-  const subtitle = isDeck
-    ? `Flashcard deck · ${attachment.cards.length} card${attachment.cards.length === 1 ? "" : "s"}`
-    : "Note";
-  const Icon = isDeck ? Layers : FileText;
+  const title = attachment.type === "note" ? attachment.title : attachment.name;
+  const subtitle =
+    attachment.type === "deck"
+      ? `Flashcard deck · ${attachment.cards.length} card${attachment.cards.length === 1 ? "" : "s"}`
+      : attachment.type === "exercise_set"
+        ? `Quiz · ${attachment.exercises.length} question${attachment.exercises.length === 1 ? "" : "s"}`
+        : "Note";
+  const Icon =
+    attachment.type === "deck" ? Layers : attachment.type === "exercise_set" ? BrainCircuit : FileText;
 
   async function startSave() {
     if (classes) return;
@@ -462,7 +605,9 @@ function AttachmentCard({
           to={
             saved.type === "deck"
               ? `/decks/${saved.deckId}`
-              : `/classes/${saved.classId}/notes/${saved.noteId}`
+              : saved.type === "exercise_set"
+                ? `/practice/${saved.setId}`
+                : `/classes/${saved.classId}/notes/${saved.noteId}`
           }
           className="mt-2.5 flex w-fit items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
         >

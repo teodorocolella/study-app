@@ -3,14 +3,6 @@ import { useEffect, useState } from "react";
 import { getExistingSubscription, getPushConfig, isPushSupported, subscribeToPush } from "../../lib/push";
 
 const DISMISSED_KEY = "notificationsPromptDismissed";
-const INSTALL_HINT_KEY = "installHintDismissed";
-
-function isStandalone() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true
-  );
-}
 
 /** A one-time dismissible banner offering to turn on push notifications for messages. */
 export function NotificationsPrompt() {
@@ -22,15 +14,14 @@ export function NotificationsPrompt() {
   useEffect(() => {
     if (!isPushSupported() || localStorage.getItem(DISMISSED_KEY) === "1") return;
     if (typeof Notification !== "undefined" && Notification.permission !== "default") return;
-    // Shares a corner with the install-to-home-screen hint — don't stack both
-    // on a first visit; show this one only once that's been dealt with.
-    if (!isStandalone() && localStorage.getItem(INSTALL_HINT_KEY) !== "1") return;
 
     Promise.all([getPushConfig(), getExistingSubscription()])
       .then(([config, existing]) => {
         if (config.enabled && config.publicKey && !existing) {
           setPublicKey(config.publicKey);
-          setVisible(true);
+          // Small delay so it doesn't land at the same instant as the
+          // install-to-home-screen hint on a first visit.
+          setTimeout(() => setVisible(true), 3000);
         }
       })
       .catch(() => {});

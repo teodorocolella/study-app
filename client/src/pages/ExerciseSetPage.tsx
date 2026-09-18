@@ -7,6 +7,7 @@ import {
   Pencil,
   Play,
   Plus,
+  Share2,
   Trash2,
   X,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Exercise, ExerciseSetDetail, ExerciseType } from "../api/types";
 import { AppShell } from "../components/layout/AppShell";
+import { ShareModal } from "../components/share/ShareModal";
 import { useAssistantRefresh } from "../hooks/useAssistantRefresh";
 
 export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
@@ -36,6 +38,7 @@ export function ExerciseSetPage() {
   const navigate = useNavigate();
   const [set, setSet] = useState<ExerciseSetDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -94,6 +97,15 @@ export function ExerciseSetPage() {
               <Play className="h-3.5 w-3.5 fill-current" />
               Practice
             </Link>
+          )}
+          {set && set.exercises.length > 0 && (
+            <button
+              onClick={() => setSharing(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </button>
           )}
           <button
             onClick={() => void handleDeleteSet()}
@@ -197,6 +209,14 @@ export function ExerciseSetPage() {
           <Plus className="h-4 w-4" />
           Write a question
         </button>
+      )}
+
+      {sharing && set && setId && (
+        <ShareModal
+          attachment={{ type: "exercise_set", id: setId }}
+          label={set.name}
+          onClose={() => setSharing(false)}
+        />
       )}
     </AppShell>
   );

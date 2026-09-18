@@ -10,6 +10,7 @@ import { aiRateLimiter } from "./middleware/rateLimiter.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { aiRouter } from "./routes/ai.routes.js";
 import { messagesRouter } from "./routes/messages.routes.js";
+import { searchUsers } from "./controllers/messages.controller.js";
 import { groupsRouter } from "./routes/groups.routes.js";
 import { listShareableResources } from "./controllers/resources.controller.js";
 import { search } from "./controllers/search.controller.js";
@@ -68,6 +69,7 @@ export function createApp() {
   app.use("/api/review", requireAuth, reviewRouter);
   app.use("/api/dashboard", requireAuth, dashboardRouter);
   app.use("/api/messages", requireAuth, messagesRouter);
+  app.get("/api/users/search", requireAuth, searchUsers);
   app.use("/api/groups", requireAuth, groupsRouter);
   app.get("/api/resources", requireAuth, listShareableResources);
   app.get("/api/search", requireAuth, search);

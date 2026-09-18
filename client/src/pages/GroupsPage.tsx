@@ -1,4 +1,4 @@
-import { Loader2, MessageSquare, Plus, Users, X } from "lucide-react";
+import { Loader2, Plus, Users, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
@@ -45,22 +45,13 @@ export function GroupsPage() {
           <Users className="h-6 w-6 text-violet-500" />
           Study Groups
         </h1>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/direct"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-50"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Direct messages
-          </Link>
-          <button
-            onClick={() => setCreating(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
-          >
-            <Plus className="h-4 w-4" />
-            New group
-          </button>
-        </div>
+        <button
+          onClick={() => setCreating(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
+        >
+          <Plus className="h-4 w-4" />
+          New group
+        </button>
       </div>
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 

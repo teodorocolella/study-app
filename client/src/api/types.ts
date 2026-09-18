@@ -127,9 +127,18 @@ export interface MessagePartner {
   avatarUrl: string | null;
 }
 
+export interface ExerciseSetAttachmentExercise {
+  type: string;
+  prompt: string;
+  options: string[] | null;
+  answer: string;
+  explanation: string | null;
+}
+
 export type MessageAttachment =
   | { type: "note"; title: string; contentHtml: string }
-  | { type: "deck"; name: string; cards: { front: string; back: string }[] };
+  | { type: "deck"; name: string; cards: { front: string; back: string }[] }
+  | { type: "exercise_set"; name: string; exercises: ExerciseSetAttachmentExercise[] };
 
 export interface Message {
   id: string;
@@ -139,6 +148,8 @@ export interface Message {
   attachment: MessageAttachment | null;
   createdAt: string;
   readAt: string | null;
+  editedAt: string | null;
+  deleted: boolean;
 }
 
 export interface Conversation {
@@ -153,9 +164,10 @@ export interface MessageThread {
 }
 
 export interface ImportResult {
-  type: "note" | "deck";
+  type: "note" | "deck" | "exercise_set";
   noteId?: string;
   deckId?: string;
+  setId?: string;
   classId: string;
 }
 

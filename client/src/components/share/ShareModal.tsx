@@ -1,16 +1,24 @@
 import { Check, Loader2, Send, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "../../api/client";
+import type { MessagePartner } from "../../api/types";
+import { UserPicker } from "../messaging/UserPicker";
+
+const NOUN: Record<ShareModalProps["attachment"]["type"], string> = {
+  note: "note",
+  deck: "deck",
+  exercise_set: "quiz",
+};
 
 interface ShareModalProps {
-  attachment: { type: "note" | "deck"; id: string };
+  attachment: { type: "note" | "deck" | "exercise_set"; id: string };
   /** What's being shared, shown in the header — e.g. a deck or note title. */
   label: string;
   onClose: () => void;
 }
 
 export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
-  const [email, setEmail] = useState("");
+  const [recipient, setRecipient] = useState<MessagePartner | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -26,12 +34,12 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim() || sending) return;
+    if (!recipient || sending) return;
     setSending(true);
     setError(null);
     try {
       await api.post("/messages", {
-        recipientEmail: email.trim(),
+        recipientId: recipient.id,
         body: body.trim() || undefined,
         attachment,
       });
@@ -56,7 +64,7 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="font-display font-semibold text-slate-800 dark:text-slate-100">
-              Share {attachment.type === "deck" ? "deck" : "note"}
+              Share {NOUN[attachment.type]}
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Send "{label}" to a classmate. They'll get their own copy to keep.
@@ -74,14 +82,7 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-              type="email"
-              autoFocus
-              placeholder="Classmate's Study Hub email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
-            />
+            <UserPicker selected={recipient} onSelect={setRecipient} autoFocus />
             <textarea
               placeholder="Add a message (optional)"
               value={body}
@@ -92,7 +93,7 @@ export function ShareModal({ attachment, label, onClose }: ShareModalProps) {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
               type="submit"
-              disabled={sending || !email.trim()}
+              disabled={sending || !recipient}
               className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
