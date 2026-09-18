@@ -9,7 +9,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type { Flashcard } from "../api/types";
@@ -43,7 +43,9 @@ export function StudySessionPage() {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
 
-  useEffect(() => {
+  const loadCards = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api
       .get<Flashcard[]>(deckId ? `/decks/${deckId}/review/due` : "/review/due")
       .then((cards) => {
@@ -53,6 +55,18 @@ export function StudySessionPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, [deckId]);
+
+  useEffect(() => {
+    loadCards();
+  }, [loadCards]);
+
+  function restart() {
+    setReviewedCount(0);
+    setGradeCounts({ again: 0, hard: 0, good: 0, easy: 0 });
+    setRevealed(false);
+    setExplanation(null);
+    loadCards();
+  }
 
   const current = queue[0];
   const progress = totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0;
@@ -150,12 +164,12 @@ export function StudySessionPage() {
             )}
           </div>
           <p className="font-display text-xl font-semibold text-slate-800 dark:text-slate-100">
-            {reviewedCount > 0 ? "Session complete!" : "All caught up!"}
+            {reviewedCount > 0 ? "Session complete!" : "No flashcards yet"}
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {reviewedCount > 0
               ? `You reviewed ${reviewedCount} card${reviewedCount === 1 ? "" : "s"}.`
-              : "No cards are due for review right now."}
+              : "Add flashcards to a class, then come back to study them here."}
           </p>
           {reviewedCount > 0 && (
             <div className="mt-4 flex items-center justify-center gap-2">
@@ -173,12 +187,22 @@ export function StudySessionPage() {
               })}
             </div>
           )}
-          <Link
-            to={backTo}
-            className="mt-5 inline-block rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
-          >
-            {backLabel}
-          </Link>
+          <div className="mt-5 flex items-center justify-center gap-3">
+            {reviewedCount > 0 && totalCount > 0 && (
+              <button
+                onClick={restart}
+                className="rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.02]"
+              >
+                Study again
+              </button>
+            )}
+            <Link
+              to={backTo}
+              className="rounded-lg border border-slate-300 dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              {backLabel}
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="mt-6">

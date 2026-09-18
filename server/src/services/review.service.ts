@@ -42,6 +42,35 @@ export async function getDueCards(userId: string, filter: DueCardsFilter = {}) {
   });
 }
 
+// Every card in scope (not just "due" ones), shuffled — powers the study
+// sessions, so "Review everything" always studies the whole set in a fresh order.
+export async function getStudyCards(userId: string, filter: DueCardsFilter = {}) {
+  const cards = await prisma.flashcard.findMany({
+    where: {
+      deck: {
+        archived: false,
+        ...(filter.deckId ? { id: filter.deckId } : {}),
+        classFolder: {
+          userId,
+          archived: false,
+          ...(filter.classId ? { id: filter.classId } : {}),
+        },
+      },
+    },
+    include: {
+      progress: { where: { userId } },
+      deck: { select: { id: true, name: true, classFolderId: true } },
+    },
+  });
+
+  // Fisher–Yates shuffle so repeat sessions aren't in the same order.
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
+
 export async function submitReview(userId: string, cardId: string, grade: number) {
   const now = new Date();
   const existing = await prisma.cardProgress.findUnique({

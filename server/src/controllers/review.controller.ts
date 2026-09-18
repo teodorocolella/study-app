@@ -5,19 +5,19 @@ import { getOwnedFlashcard } from "../services/ownership.service.js";
 import {
   GRADE_LABELS,
   getDashboardSummary,
-  getDueCards,
+  getStudyCards,
   submitReview,
 } from "../services/review.service.js";
 
 export async function getDueCardsAcrossClasses(req: Request, res: Response) {
   const classId = typeof req.query.classId === "string" ? req.query.classId : undefined;
-  const cards = await getDueCards(req.userId, { classId });
+  const cards = await getStudyCards(req.userId, { classId });
   res.json(cards);
 }
 
 export async function getDueCardsForDeck(req: Request, res: Response) {
   const deckId = param(req, "deckId");
-  const cards = await getDueCards(req.userId, { deckId });
+  const cards = await getStudyCards(req.userId, { deckId });
   res.json(cards);
 }
 

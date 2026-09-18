@@ -83,11 +83,6 @@ export function ClassesPage() {
                   <span className="truncate font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
                   </span>
-                  {c.dueCount > 0 && (
-                    <span className="ml-2 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
-                      {c.dueCount} due
-                    </span>
-                  )}
                 </div>
                 <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">

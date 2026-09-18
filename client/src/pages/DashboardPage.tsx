@@ -23,6 +23,14 @@ import { ClassColorPicker } from "../components/layout/ClassColorPicker";
 import { ClassLogo } from "../components/layout/ClassLogo";
 import { CLASS_COLORS } from "../lib/classColors";
 
+const STUDY_PROMPT =
+  "What should I study today? Look across my classes, notes, flashcard decks, and quizzes and tell me what to focus on right now and why.";
+
+/** Opens the AI assistant and asks it what to study. */
+function openStudyAssistant() {
+  window.dispatchEvent(new CustomEvent("open-assistant", { detail: { prompt: STUDY_PROMPT } }));
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -70,25 +78,21 @@ export function DashboardPage() {
           <p className="mb-1 text-sm font-medium text-violet-100">Welcome back</p>
           <h1 className="font-display text-3xl font-semibold">{user?.displayName}</h1>
           <p className="mt-2 max-w-md text-sm text-violet-100">
-            {summary && summary.totalDue > 0
-              ? `You have ${summary.totalDue} card${summary.totalDue === 1 ? "" : "s"} ready for review.`
-              : "You're all caught up — nice work!"}
+            Ready to study? Drill your flashcards, or ask your AI tutor what to focus on.
           </p>
-          {summary && summary.totalDue > 0 && (
-            <Link
-              to="/study"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-transform hover:scale-[1.02]"
-            >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              Review everything
-            </Link>
-          )}
+          <Link
+            to="/study"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-300 shadow-sm transition-transform hover:scale-[1.02]"
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+            Review everything
+          </Link>
         </div>
         <Sparkles className="hidden h-16 w-16 text-white/20 sm:block" strokeWidth={1.5} />
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={Layers} label="Due today" value={summary?.totalDue ?? "—"} accent="violet" />
+        <StudyNowCard onClick={openStudyAssistant} />
         <StatCard icon={BookOpen} label="Studied today" value={summary?.studiedToday ?? "—"} accent="sky" />
         <StatCard icon={CalendarCheck} label="This week" value={summary?.studiedThisWeek ?? "—"} accent="emerald" />
         <StatCard icon={Flame} label="Day streak" value={summary?.streak ?? "—"} accent="amber" />
@@ -119,15 +123,9 @@ export function DashboardPage() {
             <QuickAction
               icon={MessageSquare}
               label="Message a classmate"
-              onClick={() => navigate("/groups")}
+              onClick={() => navigate("/direct")}
             />
-            {summary && summary.totalDue > 0 && (
-              <QuickAction
-                icon={Play}
-                label={`Review ${summary.totalDue} due card${summary.totalDue === 1 ? "" : "s"}`}
-                onClick={() => navigate("/study")}
-              />
-            )}
+            <QuickAction icon={Play} label="Review everything" onClick={() => navigate("/study")} />
           </div>
         </div>
       </div>
@@ -150,11 +148,6 @@ export function DashboardPage() {
                   <span className="truncate font-medium text-slate-700 dark:text-slate-200 transition-colors group-hover:text-slate-900">
                     {c.name}
                   </span>
-                  {c.dueCount > 0 && (
-                    <span className="ml-2 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
-                      {c.dueCount} due
-                    </span>
-                  )}
                 </div>
                 <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
@@ -261,6 +254,24 @@ function QuickAction({
     >
       <Icon className="h-4 w-4 text-violet-500" />
       {label}
+    </button>
+  );
+}
+
+/** Clickable tile that opens the AI tutor and asks what to study today. */
+function StudyNowCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex flex-col items-start rounded-xl border border-violet-200 bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-left shadow-sm transition-transform hover:scale-[1.02] dark:border-violet-500/40"
+    >
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white">
+        <Sparkles className="h-4.5 w-4.5" strokeWidth={2.25} />
+      </div>
+      <p className="text-xs font-medium uppercase tracking-wide text-violet-100">Study now</p>
+      <p className="font-display mt-1 text-lg font-semibold leading-tight text-white">
+        Ask AI what to study
+      </p>
     </button>
   );
 }

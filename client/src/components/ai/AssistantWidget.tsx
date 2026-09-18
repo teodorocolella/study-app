@@ -81,6 +81,7 @@ export function AssistantWidget() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   // Abort any in-flight stream if the widget unmounts.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -91,12 +92,26 @@ export function AssistantWidget() {
   }, [open]);
 
   useEffect(() => {
-    function onOpenRequest() {
+    // Openers can pass a prompt to auto-send, e.g. the dashboard "Study now"
+    // tile asks Claude what to study.
+    function onOpenRequest(e: Event) {
       setOpen(true);
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
+      if (prompt) setPendingPrompt(prompt);
     }
     window.addEventListener("open-assistant", onOpenRequest);
     return () => window.removeEventListener("open-assistant", onOpenRequest);
   }, []);
+
+  // Fire a queued prompt once the panel is open and nothing else is streaming.
+  useEffect(() => {
+    if (open && pendingPrompt && !sending) {
+      const prompt = pendingPrompt;
+      setPendingPrompt(null);
+      void send(prompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pendingPrompt, sending]);
 
   useEffect(() => {
     sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.slice(-40)));
